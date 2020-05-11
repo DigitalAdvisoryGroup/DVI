@@ -180,17 +180,15 @@ class ReportConfigure(models.AbstractModel):
                 print("---------move_ids----------",move_ids)
                 main_account_balance = 0.0
                 for move in move_ids:
-                    flag_check = any(move.line_ids.filtered(lambda acc: not acc.account_id.x_ext_ledger_account))
-                    print("--------flag_check--------------",flag_check)
-                    if flag_check and not options['external']: continue
+                    aml_ids = self.env['account.move.line'].search([('move_id','=',move.id),('account_id.x_ext_ledger_account','=',True)])
+                    if aml_ids and not options['external']: continue
                     for aml in move.line_ids:
                         if aml.account_id.id == account_id.id:
                             main_account_balance += abs(aml.balance)
                         if not options['external'] and aml.account_id.x_ext_ledger_account:
                             main_account_balance -= aml.balance
-                print("--------main_account_balance---------",main_account_balance)
-                line_amount = line._compute_line({}, report_id)
-                print("---------line_amount------------",line_amount)
+                # line_amount = line._compute_line({}, report_id)
+                # print("---------line_amount------------",line_amount)
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
                            self.format_value(main_account_balance), '']
                 lines.append({
