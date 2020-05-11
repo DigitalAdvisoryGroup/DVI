@@ -159,19 +159,34 @@ class ReportConfigure(models.AbstractModel):
 
     @api.model
     def _get_lines(self, options, line_id=None):
+        print("-------options------------",options)
         lines = []
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
         if report_id:
-            if options.get("external") and options['external']:
-                final_line_ids = report_id.line_ids.filtered(lambda lead: lead.account_id.x_ext_ledger_account)
-            else:
-                final_line_ids = report_id.line_ids.filtered(lambda acc: not acc.account_id.x_ext_ledger_account)
-            for line in final_line_ids:
+            date_from = options.get("date").get("date_from")
+            date_to = options.get("date").get("date_to")
+            # if options.get("external") and options['external']:
+            #     final_line_ids = report_id.line_ids.filtered(lambda lead: lead.account_id.x_ext_ledger_account)
+            # else:
+            #     final_line_ids = report_id.line_ids.filtered(lambda acc: not acc.account_id.x_ext_ledger_account)
+            for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
+                move_ids = self.env['account.move'].search([('date','>=',date_from),('date','<=',date_to),('line_ids.account_id','=',account_id.id)])
+                print("---------move_ids----------",move_ids)
+                main_account_balance = 0.0
+                ext_account_balance = 0.0
+                for move in move_ids:
+                    for aml in move.line_ids:
+                        if aml.account_id.id == account_id.id:
+                            main_account_balance += abs(aml.balance)
+                        if not options['external'] and aml.account_id.x_ext_ledger_account:
+                            main_account_balance -= aml.balance
+                print("--------main_account_balance---------",main_account_balance)
                 line_amount = line._compute_line({}, report_id)
+                print("---------line_amount------------",line_amount)
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
-                           self.format_value(line_amount.get('balance')), '']
+                           self.format_value(main_account_balance), '']
                 lines.append({
                     'id': str(line.id),
                     'name': '',
@@ -179,10 +194,10 @@ class ReportConfigure(models.AbstractModel):
                 })
         return lines
 
-    def _get_reports_buttons(self):
-        res = super(ReportConfigure, self)._get_reports_buttons()
-        res.append({'name': _('Export (SAP)'), 'action': 'print_pdf'})
-        return res
+    # def _get_reports_buttons(self):
+    #     res = super(ReportConfigure, self)._get_reports_buttons()
+    #     res.append({'name': _('Export (SAP)'), 'action': 'print_pdf'})
+    #     return res
 
     def _get_templates(self):
         templates = super(ReportConfigure, self)._get_templates()
