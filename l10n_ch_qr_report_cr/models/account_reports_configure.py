@@ -198,10 +198,10 @@ class ReportConfigure(models.AbstractModel):
                 })
         return lines
 
-    # def _get_reports_buttons(self):
-    #     res = super(ReportConfigure, self)._get_reports_buttons()
-    #     res.append({'name': _('Export (SAP)'), 'action': 'print_pdf'})
-    #     return res
+    def _get_reports_buttons(self):
+        res = super(ReportConfigure, self)._get_reports_buttons()
+        res.append({'name': _('Export (SAP)'), 'action': 'print_pdf'})
+        return res
 
     def _get_templates(self):
         templates = super(ReportConfigure, self)._get_templates()
