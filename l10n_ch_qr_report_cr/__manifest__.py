@@ -23,9 +23,10 @@ Description
     'author': "Candidroot Solutions Pvt. Ltd.",
     'website': "https://candidroot.com/",
     'category': 'Localization',
-    'depends': ['l10n_ch_reports'],
+    'depends': ['l10n_ch_reports','account_reports'],
     'data': [
             "security/ir.model.access.csv",
+            "views/asset_templates.xml",
             "views/res_config_settings_views.xml",
             "report/swissqr_report.xml",
             "views/report_menu_view.xml",

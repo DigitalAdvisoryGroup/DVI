@@ -2,6 +2,30 @@
 <odoo>
     <data>
 
+        <template id="search_template_account_configure_external">
+            <a type="button" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="fa fa-filter"/> External Ledger:
+            <t t-if="options.get('external') != None">
+                <t t-if="options['external']">Included</t>
+                <t t-if="not options['external']">Excluded</t>
+            </t>
+
+        </a>
+        <div class="dropdown-menu o_filters_menu" role="menu">
+            <a role="menuitem" class="dropdown-item js_account_report_bool_filter" t-if="options.get('external') != None" title="Include External Ledger" data-filter="external" groups="account.group_account_user">Include External Ledger</a>
+        </div>
+        </template>
+
+        <template id="search_template_account_configure_report" inherit_id="account_reports.search_template"
+                  primary="True">
+            <xpath expr="//div[hasclass('o_account_reports_filter_bool')]" position="after">
+                <div class="btn-group o_dropdown o_account_reports_filter_external"
+                     t-if="options.get('external') != None">
+                    <t t-call="l10n_ch_qr_report_cr.search_template_account_configure_external"/>
+                </div>
+            </xpath>
+        </template>
+
         <!-- partner and general ledger templates -->
         <template id="line_template_account_configure_report" inherit_id="account_reports.line_template" primary="True">
             <t t-foreach="lines['lines']" t-as="line" position="replace">
@@ -50,7 +74,9 @@
 
         <template id="main_template_account_configure_report" inherit_id="account_reports.main_template" primary="True">
             <xpath expr="//div[hasclass('o_account_reports_summary')]" position="before">
-                <h2>Accounting Area : <t t-esc="company_accounting_area"> </t></h2>
+                <h2>Accounting Area :
+                    <t t-esc="company_accounting_area"></t>
+                </h2>
             </xpath>
         </template>
 

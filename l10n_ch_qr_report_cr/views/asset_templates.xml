@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <template id="account_reports_backend_assets" inherit_id="web.assets_backend" active="True">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/l10n_ch_qr_report_cr/static/src/js/action_report.js"></script>
+        </xpath>
+    </template>
+</odoo>

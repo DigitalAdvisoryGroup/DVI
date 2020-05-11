@@ -8,8 +8,8 @@
             <field name="arch" type="xml">
                 <tree string="Report Configure">
                     <field name="name"/>
-                    <field name="financial_id"/>
                     <field name="generated_menu_id"/>
+                    <field name="state" invisible="0"/>
                 </tree>
             </field>
         </record>
@@ -23,15 +23,17 @@
                     <sheet>
                         <div>
                             <h1 class="mt0">
-                                <field name="name" class="oe_inline"/>
+                                <field name="name" class="oe_inline" attrs="{'readonly': [('state','=','created')]}"/>
                             </h1>
                         </div>
                         <group col="4">
-                            <field name="financial_id"/>
+                            <field name="parent_id" attrs="{'readonly': [('state','=','created')]}"/>
                             <field name="generated_menu_id"/>
+                            <field name="financial_id" invisible="1"/>
+                            <field name="state" invisible="1"/>
                         </group>
                         <group>
-                            <field name="account_ids" nolabel="1">
+                            <field name="account_ids" nolabel="1" attrs="{'readonly': [('state','=','created')]}">
                                 <tree string="Account">
                                     <field name="name"/>
                                     <field name="code"/>
