@@ -177,16 +177,16 @@ class ReportConfigure(models.AbstractModel):
                 # if not options['external']:
                 #     domain.append(('line_ids.account_id.x_ext_ledger_account','=',False))
                 move_ids = self.env['account.move'].search(domain)
-                print("---------move_ids----------",move_ids)
                 main_account_balance = 0.0
                 for move in move_ids:
                     aml_ids = self.env['account.move.line'].search([('move_id','=',move.id),('account_id.x_ext_ledger_account','=',True)])
                     if aml_ids and not options['external']: continue
                     for aml in move.line_ids:
                         if aml.account_id.id == account_id.id:
-                            main_account_balance += abs(aml.balance)
-                        if not options['external'] and aml.account_id.x_ext_ledger_account:
-                            main_account_balance -= aml.balance
+                            main_account_balance += aml.balance
+                        # if not options['external'] and aml.account_id.x_ext_ledger_account:
+                        #     stop
+                        #     main_account_balance -= aml.balance
                 # line_amount = line._compute_line({}, report_id)
                 # print("---------line_amount------------",line_amount)
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
