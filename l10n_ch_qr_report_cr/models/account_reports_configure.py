@@ -3,6 +3,7 @@
 # See LICENSE file for full copyright and licensing details.
 
 import ast
+import re
 import io
 
 from odoo import models, fields, _, api
@@ -224,12 +225,12 @@ class ReportConfigure(models.AbstractModel):
         for data in json_data:
             count = 0
             for d in data.values():
-                if d and data['External Balance'] == d:
+                if ((data.get("External Balance") and d and data['External Balance']) or (data.get("Saldo Kontoführung") and d and data['Saldo Kontoführung'])) == d:
+                    d = re.sub("[^\d\.]", "", d)
                     d = float(d)
                     sheet.write(y, count, d, currency_format)
-                elif d and data['Balance'] == d:
-                    d = d.split(" ")[0]
-                    d = d.replace(",","")
+                elif ((data.get("Balance") and d and data['Balance']) or (data.get("Saldo") and d and data['Saldo'])) == d:
+                    d = re.sub("[^\d\.]", "", d)
                     d = float(d)
                     sheet.write(y, count, d, currency_format)
                 else:

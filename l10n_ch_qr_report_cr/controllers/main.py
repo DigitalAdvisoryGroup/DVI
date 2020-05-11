@@ -32,6 +32,14 @@ class FinancialReportController(http.Controller):
                     ]
                 )
                 report_obj.get_custome_xlsx(options, response, json_data)
+            if output_format == 'pdf':
+                response = request.make_response(
+                    report_obj.get_pdf(options),
+                    headers=[
+                        ('Content-Type', 'application/pdf'),
+                        ('Content-Disposition', content_disposition(report_name + '.pdf'))
+                    ]
+                )
             response.set_cookie('fileToken', token)
             return response
         except Exception as e:

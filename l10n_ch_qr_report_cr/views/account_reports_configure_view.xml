@@ -9,7 +9,7 @@
                 <tree string="Report Configure">
                     <field name="name"/>
                     <field name="generated_menu_id"/>
-                    <field name="state" invisible="0"/>
+                    <field name="state" invisible="1"/>
                 </tree>
             </field>
         </record>
