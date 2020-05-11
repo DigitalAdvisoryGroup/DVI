@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- partner and general ledger templates -->
+        <template id="line_template_account_configure_report" inherit_id="account_reports.line_template" primary="True">
+            <t t-foreach="lines['lines']" t-as="line" position="replace">
+                <t t-foreach="lines['lines']" t-as="line">
+                    <tr>
+                        <td>
+                            <span>
+                                <t t-esc="line.get('name')"/>
+                            </span>
+                        </td>
+                        <t t-set="column_index" t-value="0"/>
+                        <t t-foreach="line.get('columns')" t-as="column">
+                            <t t-set="hierarchies_enabled" t-value="len(lines.get('columns_header', [])) > 1"/>
+                            <t t-if="column.get('name') != ''">
+                                <td t-att-class="'o_account_report_line ' + (column.get('class', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('class', '')) + (line.get('unfoldable') and ' o_foldable_total' or '')) + ('' if hierarchies_enabled else ' o_account_report_line_indent')"
+                                    t-att-style="column.get('style', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('style', ''))">
+                                    <span class="o_account_report_column_value" t-att-title="column.get('title')">
+                                        <t t-esc="column.get('name')"/>
+                                    </span>
+                                </td>
+                            </t>
+                            <t t-if="column.get('name') == ''">
+                                <td t-att-class="'o_account_report_line ' + (column.get('class', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('class', '')) + (line.get('unfoldable') and ' o_foldable_total' or '')) + ('' if hierarchies_enabled else ' o_account_report_line_indent')"
+                                    t-att-style="column.get('style', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('style', ''))">
+                                    <input type="text" class="o_account_report_column_value" id="ext_balance"
+                                           name="test"/>
+                                </td>
+                            </t>
+
+                            <t t-set="column_index" t-value="column_index + 1"/>
+                        </t>
+                        <!--<td>
+                            <span>
+                                <t t-esc="line.get('balance')"/>
+                            </span>
+                        </td>
+                        <td>
+                            <input type="text" id="ext_balance" name="ext_bal" />
+                        </td>-->
+
+                    </tr>
+                </t>
+            </t>
+
+        </template>
+
+        <template id="main_template_account_configure_report" inherit_id="account_reports.main_template" primary="True">
+            <xpath expr="//div[hasclass('o_account_reports_summary')]" position="before">
+                <h2>Accounting Area : <t t-esc="company_accounting_area"> </t></h2>
+            </xpath>
+        </template>
+
+    </data>
+</odoo>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_account_report_configure_tree" model="ir.ui.view">
+            <field name="name">account.report.configure.tree</field>
+            <field name="model">account.report.configure</field>
+            <field name="arch" type="xml">
+                <tree string="Report Configure">
+                    <field name="name"/>
+                    <field name="financial_id"/>
+                    <field name="generated_menu_id"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record id="view_account_report_configure_form" model="ir.ui.view">
+            <field name="name">account.report.configure.form</field>
+            <field name="model">account.report.configure</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div>
+                            <h1 class="mt0">
+                                <field name="name" class="oe_inline"/>
+                            </h1>
+                        </div>
+                        <group col="4">
+                            <field name="financial_id"/>
+                            <field name="generated_menu_id"/>
+                        </group>
+                        <group>
+                            <field name="account_ids" nolabel="1">
+                                <tree string="Account">
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="user_type_id"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="action_account_configure_report" model="ir.actions.act_window">
+            <field name="name">Report Configure</field>
+            <field name="res_model">account.report.configure</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a Configure Report
+                </p>
+            </field>
+        </record>
+
+        <menuitem action="action_account_configure_report" id="menu_action_account_configure_report"
+                  parent="account.account_management_menu" sequence="100"/>
+
+
+    </data>
+</odoo>
