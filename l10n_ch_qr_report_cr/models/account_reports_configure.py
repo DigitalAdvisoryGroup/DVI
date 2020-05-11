@@ -245,11 +245,11 @@ class ReportConfigure(models.AbstractModel):
             count = 0
             for d in data.values():
                 if ((data.get("External Balance") and d and data['External Balance']) or (data.get("Saldo Kontoführung") and d and data['Saldo Kontoführung'])) == d:
-                    d = re.sub("[^\d\.]", "", d)
+                    d = re.sub("[^\d\.-]", "", d)
                     d = float(d)
                     sheet.write(y, count, d, currency_format)
                 elif ((data.get("Balance") and d and data['Balance']) or (data.get("Saldo") and d and data['Saldo'])) == d:
-                    d = re.sub("[^\d\.]", "", d)
+                    d = re.sub("[^\d\.-]", "", d)
                     d = float(d)
                     sheet.write(y, count, d, currency_format)
                 else:
