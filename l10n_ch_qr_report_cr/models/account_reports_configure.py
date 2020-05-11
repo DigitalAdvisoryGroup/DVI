@@ -173,13 +173,17 @@ class ReportConfigure(models.AbstractModel):
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
                 # if account_id.x_code_external: continue
-                move_ids = self.env['account.move'].search([('date','>=',date_from),('date','<=',date_to),('line_ids.account_id','=',account_id.id)])
+                domain = [('date','>=',date_from),('date','<=',date_to),('line_ids.account_id','=',account_id.id)]
+                # if not options['external']:
+                #     domain.append(('line_ids.account_id.x_ext_ledger_account','=',False))
+                move_ids = self.env['account.move'].search(domain)
                 print("---------move_ids----------",move_ids)
                 main_account_balance = 0.0
                 for move in move_ids:
+                    flag_check = any(move.line_ids.filtered(lambda acc: not acc.account_id.x_ext_ledger_account))
+                    print("--------flag_check--------------",flag_check)
+                    if flag_check and not options['external']: continue
                     for aml in move.line_ids:
-                        print("-------aml.account_id--code------",aml.account_id.code)
-                        print("-------aml.account_id-----x_ext_ledger_account---",aml.account_id.x_ext_ledger_account)
                         if aml.account_id.id == account_id.id:
                             main_account_balance += abs(aml.balance)
                         if not options['external'] and aml.account_id.x_ext_ledger_account:
