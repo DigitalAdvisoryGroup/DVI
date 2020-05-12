@@ -3,11 +3,13 @@
 # See LICENSE file for full copyright and licensing details.
 
 import ast
-import re
 import io
+import json
+import re
 
 from odoo import models, fields, _, api
-from babel.dates import get_quarter_names, parse_date
+from odoo.exceptions import UserError
+
 try:
     from odoo.tools.misc import xlsxwriter
 except ImportError:
@@ -34,7 +36,7 @@ class AccountReportConfigured(models.Model):
                                         help="The menu item generated for this report, or None if there isn't any."
                                         )
     parent_id = fields.Many2one('ir.ui.menu', related="generated_menu_id.parent_id", readonly=False)
-    state = fields.Selection([('created','Created')], string="State", default="")
+    state = fields.Selection([('created', 'Created')], string="State", default="")
 
     @api.model
     def create(self, vals):
@@ -63,7 +65,6 @@ class AccountReportConfigured(models.Model):
             if rec.financial_id:
                 rec.financial_id.sudo().unlink()
         return super(AccountReportConfigured, self).unlink()
-
 
     def _create_action_and_menu(self, parent_id):
         # create action and menu with corresponding external ids, in order to
@@ -152,6 +153,17 @@ class ReportConfigure(models.AbstractModel):
         return super(ReportConfigure, self).get_html(options, line_id=line_id,
                                                      additional_context=additional_context)
 
+    def export_sap(self, options):
+        raise UserError(_('Under Development. Please wait for next update'))
+        return {
+            'type': 'ir_actions_account_report_download',
+            'data': {'model': self.env.context.get('model'),
+                     'options': json.dumps(options),
+                     'output_format': 'sap',
+                     'financial_id': self.env.context.get('id'),
+                     }
+        }
+
     def _set_context(self, options):
         ctx = super(ReportConfigure, self)._set_context(options)
         ctx.update({'id': self.id})
@@ -159,36 +171,25 @@ class ReportConfigure(models.AbstractModel):
 
     @api.model
     def _get_lines(self, options, line_id=None):
-        print("-------options------------",options)
         lines = []
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
         if report_id:
             date_from = options.get("date").get("date_from")
             date_to = options.get("date").get("date_to")
-            # if options.get("external") and options['external']:
-            #     final_line_ids = report_id.line_ids.filtered(lambda lead: lead.account_id.x_ext_ledger_account)
-            # else:
-            #     final_line_ids = report_id.line_ids.filtered(lambda acc: not acc.account_id.x_ext_ledger_account)
             for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
-                # if account_id.x_code_external: continue
-                domain = [('date','>=',date_from),('date','<=',date_to),('line_ids.account_id','=',account_id.id)]
-                # if not options['external']:
-                #     domain.append(('line_ids.account_id.x_ext_ledger_account','=',False))
+                domain = [('date', '>=', date_from), ('date', '<=', date_to),
+                          ('line_ids.account_id', '=', account_id.id)]
                 move_ids = self.env['account.move'].search(domain)
                 main_account_balance = 0.0
                 for move in move_ids:
-                    aml_ids = self.env['account.move.line'].search([('move_id','=',move.id),('account_id.x_ext_ledger_account','=',True)])
+                    aml_ids = self.env['account.move.line'].search(
+                        [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
                     if aml_ids and not options['external']: continue
                     for aml in move.line_ids:
                         if aml.account_id.id == account_id.id:
                             main_account_balance += aml.balance
-                        # if not options['external'] and aml.account_id.x_ext_ledger_account:
-                        #     stop
-                        #     main_account_balance -= aml.balance
-                # line_amount = line._compute_line({}, report_id)
-                # print("---------line_amount------------",line_amount)
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
                            self.format_value(main_account_balance), '']
                 lines.append({
@@ -200,7 +201,7 @@ class ReportConfigure(models.AbstractModel):
 
     def _get_reports_buttons(self):
         res = super(ReportConfigure, self)._get_reports_buttons()
-        res.append({'name': _('Export (SAP)'), 'action': 'print_pdf'})
+        res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
         return res
 
     def _get_templates(self):
@@ -244,14 +245,19 @@ class ReportConfigure(models.AbstractModel):
         for data in json_data:
             count = 0
             for d in data.values():
-                if ((data.get("External Balance") and d and data['External Balance']) or (data.get("Saldo Kontoführung") and d and data['Saldo Kontoführung'])) == d:
-                    d = re.sub("[^\d\.-]", "", d)
+                if d and ((data.get("External Balance") and data['External Balance'] or False) or (
+                        data.get("Saldo extern") and data['Saldo extern'] or False)) == d:
+                    d = re.sub("[^\d\.]", "", d)
                     d = float(d)
                     sheet.write(y, count, d, currency_format)
-                elif ((data.get("Balance") and d and data['Balance']) or (data.get("Saldo") and d and data['Saldo'])) == d:
-                    d = re.sub("[^\d\.-]", "", d)
+                elif d and ((data.get("Balance") and data['Balance'] or False) or (
+                        data.get("Saldo") and data['Saldo'] or False)) == d:
+                    sign = 1
+                    if '-' in d:
+                        sign = -1
+                    d = re.sub("[^\d\.]", "", d)
                     d = float(d)
-                    sheet.write(y, count, d, currency_format)
+                    sheet.write(y, count, d * sign, currency_format)
                 else:
                     sheet.write(y, count, d, default_col1_style)
                 count += 1
@@ -260,3 +266,11 @@ class ReportConfigure(models.AbstractModel):
         output.seek(0)
         response.stream.write(output.read())
         output.close()
+
+    def get_sap_txt(self, options, json_data):
+        print("-------self-----------", self)
+        print("-------self-----------", self.env.context)
+        print("-------options-----------", options)
+        print("-------json_data-----------", json_data)
+
+        stop

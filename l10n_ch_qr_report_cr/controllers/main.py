@@ -22,6 +22,8 @@ class FinancialReportController(http.Controller):
         if financial_id and financial_id != 'null':
             report_obj = report_obj.browse(int(financial_id))
         report_name = report_obj.get_report_filename(options)
+        print("-----------output_format-----------",output_format)
+        print("-----------report_obj-----------",report_obj)
         try:
             if output_format == 'xlsx':
                 response = request.make_response(
@@ -40,6 +42,18 @@ class FinancialReportController(http.Controller):
                         ('Content-Disposition', content_disposition(report_name + '.pdf'))
                     ]
                 )
+            if output_format == 'sap':
+                content = report_obj.get_sap_txt(options, json_data)
+                stop
+                response = request.make_response(
+                    content,
+                    headers=[
+                        ('Content-Type', 'text/plain'),
+                        ('Content-Disposition', content_disposition(report_name + '.txt')),
+                        ('Content-Length', len(content))
+                    ]
+                )
+                print("-------------response-------------",response)
             response.set_cookie('fileToken', token)
             return response
         except Exception as e:
