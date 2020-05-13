@@ -44,7 +44,7 @@ class FinancialReportController(http.Controller):
                 )
             if output_format == 'sap':
                 content = report_obj.get_sap_txt(options, json_data)
-                stop
+                report_name = request.env.user.company_id.x_sap_export_file
                 response = request.make_response(
                     content,
                     headers=[
