@@ -430,7 +430,7 @@ class ReportConfigure(models.AbstractModel):
                     cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     amount = line['debit'] or line['credit']
-                    dc_type = line['debit'] and 'S' or 'H'
+                    dc_type = line['debit'] - line['credit'] > 0.0 and 'S' or 'H'
                     if line['debit'] and line['credit']:
                         amount = abs(line['debit'] - line['credit'])
                     total_records += 1
