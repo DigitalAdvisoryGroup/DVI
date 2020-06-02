@@ -8,6 +8,7 @@ import io
 import json
 import os
 import re
+from time import gmtime, strftime
 
 from odoo import models, fields, _, api
 
@@ -278,17 +279,20 @@ class ReportConfigure(models.AbstractModel):
         print("-------self-----------", self.env.context)
         print("-------options-----------", options)
         print("-------json_data-----------", json_data)
-        with open('/tmp/sap.txt', 'a') as f:
-            company = self.env.user.company_id
-            header = 'A'
-            header += company.x_acc_area.x_code.ljust(4, ' ')
-            header += '01'
-            header += company.x_ledger_name.ljust(60, ' ')
-            header += '/'.ljust(1, " ")
-            f.write(header + '\n')
-            self.with_context(id=self.id).get_sap_export_lines(options, f)
-        content = open('/tmp/sap.txt').read()
-        os.remove("/tmp/sap.txt")
+        try:
+            with open('/tmp/sap.txt', 'a') as f:
+                company = self.env.user.company_id
+                header = 'A'
+                header += company.x_acc_area.x_code.ljust(4, ' ')
+                header += '01'
+                header += company.x_ledger_name.ljust(60, ' ')
+                header += '/'.ljust(1, " ")
+                f.write(header + '\n')
+                self.with_context(id=self.id).get_sap_export_lines(options, f)
+            content = open('/tmp/sap.txt').read()
+            os.remove("/tmp/sap.txt")
+        except:
+            os.remove("/tmp/sap.txt")
         return content
 
     def get_sap_export_lines(self, options, f):
@@ -296,7 +300,7 @@ class ReportConfigure(models.AbstractModel):
         if report_id:
             date_from = options.get("date").get("date_from")
             date_to = options.get("date").get("date_to")
-            final_move_dict = {}
+            final_move = []
             for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
@@ -307,139 +311,161 @@ class ReportConfigure(models.AbstractModel):
                     aml_ids = self.env['account.move.line'].search(
                         [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
                     if aml_ids and not options['external']: continue
+                    # print("----------move------------------",move)
+                    if move.id not in final_move:
+                        final_move.append(move.id)
+                        final_move.sort(reverse=True)
+            final_move = self.env['account.move'].browse(final_move)
+            temp_dict = {}
+            final_dict = {}
+            for mv in final_move:
+                temp_dict.update({mv: []})
+                for aml in mv.line_ids:
+                    temp_dict[mv].append({'account_id': aml.account_id,'account_code': aml.x_code_external,'debit': aml.debit,
+                                             'credit': aml.credit, 'analytic_account_id': aml.analytic_account_id})
+            for k,v in temp_dict.items():
+                v_acc_id = [(x['account_id'].id, x['analytic_account_id'].id) for x in v]
+                v_acc_id.sort()
+                for kk,vv in temp_dict.items():
+                    if k != kk:
+                        vv_acc_id = [(x['account_id'].id, x['analytic_account_id'].id) for x in vv]
+                        vv_acc_id.sort()
+                        if vv_acc_id and v_acc_id and vv_acc_id == v_acc_id:
+                            final_dict.update({k: v+vv})
+                            temp_dict[kk] = []
+            for k,v in final_dict.items():
+                del temp_dict[k]
+            res = self.parse_sap_move_lines(temp_dict,self.merge_final_dict_lines(final_dict), self.env.user.company_id, f)
 
-                    move_acc_ids = move.mapped("line_ids").mapped('account_id').ids
-                    move_acc_ids.sort()
-                    print("------------move_acc_ids---------", move_acc_ids)
-                    if move_acc_ids in final_move_dict.values():
-                        for k, v in final_move_dict.items():
-                            print("---------k,v------------", k, v)
-                            if move_acc_ids == v:
-                                final_move_dict[k + '-' + str(move.id)] = final_move_dict[k]
-                                del final_move_dict[k]
-                                break
-                    else:
-                        final_move_dict.update({str(move.id): move_acc_ids})
-
-            print("----------final_move_dict----------", final_move_dict)
-            singal_final_moves = []
-            merge_final_moves = []
-            for k in final_move_dict.keys():
-                k = k.split("-")
-                if len(k) > 1:
-                    for key in k:
-                        merge_final_moves.append(int(key))
+    def merge_final_dict_lines(self, final_dict):
+        for k,v in final_dict.items():
+            dd = {}
+            for d in v:
+                if d['account_code'] in dd:
+                    dd[d['account_code']]['credit'] += d['credit']
+                    dd[d['account_code']]['debit'] += d['debit']
                 else:
-                    singal_final_moves.append(int(k[0]))
-            if merge_final_moves or singal_final_moves:
-                final_sap_move, footer_data = self.parse_sap_move_lines(singal_final_moves, merge_final_moves)
-                company = self.env.user.company_id
-                if final_sap_move:
-                    for sap_line in final_sap_move:
-                        print("-----------sap_line----------", sap_line)
-                        if sap_line.get("position_header"):
-                            position_header = '1SV'
-                            position_header += company.x_acc_area.x_code.ljust(4, ' ')
-                            position_header += company.x_acc_area.x_code.ljust(16, ' ')
-                            position_header += sap_line['position_header']['move_date'].ljust(8, ' ')
-                            position_header += ''.ljust(10, ' ')
-                            position_header += ''.ljust(12, ' ')
-                            position_header += ''.ljust(10, ' ')
-                            position_header += str(sap_line['position_header']['total']).ljust(16, ' ')
-                            position_header += ''.ljust(50, ' ')
-                            position_header += ''.ljust(1, ' ')
-                            position_header += sap_line['position_header']['move_date'].ljust(8, ' ')
-                            position_header += ''.ljust(3, ' ')
-                            position_header += ''.ljust(24, ' ')
-                            print("------position_header------", position_header)
-                            f.write(position_header + '\n')
-                        if sap_line.get("position_line"):
-                            for line in sap_line['position_line']:
-                                position = '9'
-                                position += ''.ljust(2, ' ')
-                                position += ''.ljust(4, ' ')
-                                position += ''.ljust(16, ' ')
-                                position += ''.ljust(8, ' ')
-                                position += ''.ljust(10, ' ')
-                                position += ''.ljust(12, ' ')
-                                position += line['account_code'].ljust(10, ' ')
-                                position += str(line['amount']).ljust(16, ' ')
-                                position += (company.x_sap_export_posting_text + ' ' + "03.2020").ljust(50, ' ')
-                                position += line['type'].ljust(1, ' ')
-                                position += ''.ljust(8, ' ')
-                                position += ''.ljust(3, ' ')
-                                position += ''.ljust(24, ' ')
-                                f.write(position + '\n')
-                if footer_data:
-                    from time import gmtime, strftime
-                    current_time = strftime("%H:%M:%S", gmtime())
-                    position_footer = 'Z'
-                    position_footer += (datetime.date.today().strftime("%d-%m-%Y").replace("-", "")).ljust(8, ' ')
-                    position_footer += (current_time.replace(":", "")).ljust(6, " ")
-                    position_footer += company.x_sap_export_name.ljust(50, ' ')
-                    position_footer += (
-                                company.x_sap_export_path + company.x_sap_export_file + datetime.date.today().strftime(
-                            "%Y-%m-%d").replace("-", "")).ljust(50, ' ')
-                    position_footer += ''.ljust(10, ' ')
-                    position_footer += ''.ljust(10, ' ')
-                    position_footer += ''.ljust(8, ' ')
-                    position_footer += ''.ljust(8, ' ')
-                    position_footer += footer_data['no_je'].ljust(8, ' ')
-                    position_footer += ''.ljust(8, ' ')
-                    position_footer += ''.ljust(8, ' ')
-                    position_footer += footer_data['total_records'].ljust(8, ' ')
-                    position_footer += footer_data['total_debit'].ljust(16, ' ')
-                    position_footer += footer_data['total_credit'].ljust(16, ' ')
-                    f.write(position_footer)
+                    dd[d['account_code']] = d
 
-    def parse_sap_move_lines(self, singal_final_moves, merge_final_moves):
-        final_move_list = []
-        footer_data = {'no_je': '2', 'total_records': '8', 'total_debit': '2400.00', 'total_credit': '2400.00'}
-        if singal_final_moves:
-            singal_move_ids = self.env['account.move'].browse(singal_final_moves)
-            for move in singal_move_ids:
-                move_dict = {
-                    'position_header': {'move_date': move.date.strftime("%Y-%m-%d").replace("-", ""), 'total': "500.00"},
-                    'position_line': []}
-                for line in move.line_ids:
-                    if line.debit != 0.0:
-                        move_dict['position_line'].append(
-                            {'account_code': line.x_code_external, 'amount': '{:.2f}'.format(line.debit), 'type': 'S'})
+            final_dict[k] = list(dd.values())
+        return final_dict
 
-                    else:
-                        move_dict['position_line'].append(
-                            {'account_code': line.x_code_external, 'amount': '{:.2f}'.format(line.credit), 'type': 'H'})
-                final_move_list.append(move_dict)
-        if merge_final_moves:
+    def parse_sap_move_lines(self, temp_dict, final_dict, company, f):
+        total_debit_credit_amt = 0.0
+        total_je = 0.0
+        total_records = 1
+        for tk,tv in temp_dict.items():
+            if tv:
+                print("--------tk-----------",tk)
+                print("--------tv-----------",tv)
+                total_amount = tv[0]['credit'] or tv[0]['debit']
+                if tv[0]['debit'] and tv[0]['credit']:
+                    total_amount = abs(tv[0]['debit'] - tv[0]['credit'])
+                total_je += 1
+                total_records += 1
+                total_debit_credit_amt += abs(total_amount)
+                position_header = '1SV'
+                position_header += company.x_acc_area.x_code.ljust(4, ' ')
+                position_header += company.x_acc_area.x_code.ljust(16, ' ')
+                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
+                position_header += ''.ljust(10, ' ')
+                position_header += ''.ljust(12, ' ')
+                position_header += ''.ljust(10, ' ')
+                position_header += str(total_amount).ljust(16, ' ')
+                position_header += ''.ljust(50, ' ')
+                position_header += ''.ljust(1, ' ')
+                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
+                position_header += ''.ljust(3, ' ')
+                position_header += ''.ljust(24, ' ')
+                f.write(position_header + '\n')
+                for line in tv:
+                    cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
+                    profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
+                    amount = line['debit'] or line['credit']
+                    if line['debit'] and line['credit']:
+                        amount = abs(line['debit'] - line['credit'])
+                    dc_type = line['debit'] and 'S' or 'H'
+                    total_records += 1
+                    position = '9'
+                    position += ''.ljust(2, ' ')
+                    position += ''.ljust(4, ' ')
+                    position += ''.ljust(16, ' ')
+                    position += ''.ljust(8, ' ')
+                    position += cost_center_code.ljust(10, ' ')
+                    position += profit_center_code.ljust(12, ' ')
+                    position += line['account_code'].ljust(10, ' ')
+                    position += str(amount).ljust(16, ' ')
+                    position += (company.x_sap_export_posting_text + ' ' + "03.2020").ljust(50, ' ')
+                    position += dc_type.ljust(1, ' ')
+                    position += ''.ljust(8, ' ')
+                    position += ''.ljust(3, ' ')
+                    position += ''.ljust(24, ' ')
+                    f.write(position + '\n')
 
-            merge_move_ids = self.env['account.move'].browse(merge_final_moves)
-            print("------merge_move_ids------------", merge_move_ids)
-            move_dict = {
-                'position_header': {'move_date': merge_move_ids[0].date.strftime("%Y-%m-%d").replace("-", ""),
-                                    'total': '1900.00'},
-                'position_line': []}
-            account_moves_lines = self.env['account.move.line'].search_read([
-                ('move_id', 'in', merge_move_ids.ids)], ['x_code_external', 'account_id', 'debit', 'credit', 'balance'])
-            print("-------account_moves_lines------------", account_moves_lines)
-            if account_moves_lines:
-                temp_merge = {}
-                for merge_line in account_moves_lines:
-                    print("--------merge_line------------", merge_line)
-                    if merge_line['account_id'][0] in temp_merge:
-                        temp_merge[merge_line['account_id'][0]]['amount'] += merge_line['balance']
-                    else:
-                        temp_merge[merge_line['account_id'][0]] = {'account_code': merge_line['x_code_external'],
-                                                                   'amount': merge_line['balance']}
-                print("---------temp_merge----------",temp_merge)
-                for m_l in temp_merge.values():
-                    print("------m_l-----------------",m_l)
-                    if m_l['amount'] < 0.0:
-                        move_dict['position_line'].append(
-                            {'account_code': m_l['account_code'], 'amount': '{:.2f}'.format(abs(m_l['amount'])), 'type': 'H'})
-                    else:
-                        move_dict['position_line'].append(
-                            {'account_code': m_l['account_code'], 'amount': '{:.2f}'.format(m_l['amount']),
-                             'type': 'S'})
-                final_move_list.append(move_dict)
-        print("-----------final_move_list---------",final_move_list)
-        return final_move_list, footer_data
+        for tk,tv in final_dict.items():
+            if tv:
+                print("--------tk-----------",tk)
+                print("--------tv-----------",tv)
+                total_amount = tv[0]['credit'] or tv[0]['debit']
+                if tv[0]['debit'] and tv[0]['credit']:
+                    total_amount = abs(tv[0]['debit'] - tv[0]['credit'])
+                total_je += 1
+                total_records += 1
+                total_debit_credit_amt += abs(total_amount)
+                position_header = '1SV'
+                position_header += company.x_acc_area.x_code.ljust(4, ' ')
+                position_header += company.x_acc_area.x_code.ljust(16, ' ')
+                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
+                position_header += ''.ljust(10, ' ')
+                position_header += ''.ljust(12, ' ')
+                position_header += ''.ljust(10, ' ')
+                position_header += str(total_amount).ljust(16, ' ')
+                position_header += ''.ljust(50, ' ')
+                position_header += ''.ljust(1, ' ')
+                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
+                position_header += ''.ljust(3, ' ')
+                position_header += ''.ljust(24, ' ')
+                f.write(position_header + '\n')
+                for line in tv:
+                    cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
+                    profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
+                    amount = line['debit'] or line['credit']
+                    dc_type = line['debit'] and 'S' or 'H'
+                    if line['debit'] and line['credit']:
+                        amount = abs(line['debit'] - line['credit'])
+                    total_records += 1
+                    position = '9'
+                    position += ''.ljust(2, ' ')
+                    position += ''.ljust(4, ' ')
+                    position += ''.ljust(16, ' ')
+                    position += ''.ljust(8, ' ')
+                    position += cost_center_code.ljust(10, ' ')
+                    position += profit_center_code.ljust(12, ' ')
+                    position += line['account_code'].ljust(10, ' ')
+                    position += str(amount).ljust(16, ' ')
+                    position += (company.x_sap_export_posting_text + ' ' + "03.2020").ljust(50, ' ')
+                    position += dc_type.ljust(1, ' ')
+                    position += ''.ljust(8, ' ')
+                    position += ''.ljust(3, ' ')
+                    position += ''.ljust(24, ' ')
+                    f.write(position + '\n')
+        print("-------total_debit_credit_amt----------",total_debit_credit_amt)
+        print("-------total_je----------",total_je)
+        print("-------total_records----------",total_records)
+        current_time = strftime("%H:%M:%S", gmtime())
+        position_footer = 'Z'
+        position_footer += (datetime.date.today().strftime("%d-%m-%Y").replace("-", "")).ljust(8, ' ')
+        position_footer += (current_time.replace(":", "")).ljust(6, " ")
+        position_footer += company.x_sap_export_name.ljust(50, ' ')
+        position_footer += (company.x_sap_export_path + company.x_sap_export_file + datetime.date.today().strftime("%Y-%m-%d").replace("-", "")).ljust(50, ' ')
+        position_footer += ''.ljust(10, ' ')
+        position_footer += ''.ljust(10, ' ')
+        position_footer += ''.ljust(8, ' ')
+        position_footer += ''.ljust(8, ' ')
+        position_footer += str(int(total_je)).ljust(8, ' ')
+        position_footer += ''.ljust(8, ' ')
+        position_footer += ''.ljust(8, ' ')
+        position_footer += str(int(total_records+1)).ljust(8, ' ')
+        position_footer += str(total_debit_credit_amt).ljust(16, ' ')
+        position_footer += str(total_debit_credit_amt).ljust(16, ' ')
+        f.write(position_footer)
