@@ -11,6 +11,7 @@ import re
 from time import gmtime, strftime
 
 from odoo import models, fields, _, api
+from odoo.exceptions import UserError
 
 try:
     from odoo.tools.misc import xlsxwriter
@@ -279,6 +280,8 @@ class ReportConfigure(models.AbstractModel):
         print("-------self-----------", self.env.context)
         print("-------options-----------", options)
         print("-------json_data-----------", json_data)
+        if options['external']:
+            raise UserError(_('Please select external ledger filter as Excluded.'))
         try:
             with open('/tmp/sap.txt', 'a') as f:
                 company = self.env.user.company_id
