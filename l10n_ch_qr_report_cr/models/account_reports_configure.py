@@ -321,7 +321,7 @@ class ReportConfigure(models.AbstractModel):
             for mv in final_move:
                 temp_dict.update({mv: []})
                 for aml in mv.line_ids:
-                    temp_dict[mv].append({'account_id': aml.account_id,'account_code': aml.x_code_external,'debit': aml.debit,
+                    temp_dict[mv].append({'id': aml.id,'account_id': aml.account_id,'account_code': aml.x_code_external,'debit': aml.debit,
                                              'credit': aml.credit, 'analytic_account_id': aml.analytic_account_id})
             for k,v in temp_dict.items():
                 v_acc_id = [(x['account_id'].id, x['analytic_account_id'].id) for x in v]
@@ -344,6 +344,7 @@ class ReportConfigure(models.AbstractModel):
                 if d['account_code'] in dd:
                     dd[d['account_code']]['credit'] += d['credit']
                     dd[d['account_code']]['debit'] += d['debit']
+                    dd[d['account_code']]['id'] = str(dd[d['account_code']]['id'])+'-'+str(d['id'])
                 else:
                     dd[d['account_code']] = d
 
@@ -354,10 +355,13 @@ class ReportConfigure(models.AbstractModel):
         total_debit_credit_amt = 0.0
         total_je = 0.0
         total_records = 1
+        sap_seq = 1
         for tk,tv in temp_dict.items():
             if tv:
                 print("--------tk-----------",tk)
                 print("--------tv-----------",tv)
+                datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':','')).replace(" ", '') + str(sap_seq).rjust(2,'0')
+                sap_seq += 1
                 total_amount = tv[0]['credit'] or tv[0]['debit']
                 if tv[0]['debit'] and tv[0]['credit']:
                     total_amount = abs(tv[0]['debit'] - tv[0]['credit'])
@@ -366,7 +370,7 @@ class ReportConfigure(models.AbstractModel):
                 total_debit_credit_amt += abs(total_amount)
                 position_header = '1SV'
                 position_header += company.x_acc_area.x_code.ljust(4, ' ')
-                position_header += company.x_acc_area.x_code.ljust(16, ' ')
+                position_header += datetime_seq.ljust(16, ' ')
                 position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
                 position_header += ''.ljust(10, ' ')
                 position_header += ''.ljust(12, ' ')
@@ -379,6 +383,13 @@ class ReportConfigure(models.AbstractModel):
                 position_header += ''.ljust(24, ' ')
                 f.write(position_header + '\n')
                 for line in tv:
+                    print("-------line['id']-------------",line['id'])
+                    aml_ids = str(line['id']).split('-')
+                    print("-------aml_ids----------",aml_ids)
+                    for aml in aml_ids:
+                        aml_ids = self.env['account.move.line'].browse(int(aml))
+                        print("--------aml_ids------------", aml_ids)
+                        aml_ids.x_sap_export_seq = datetime_seq
                     cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     amount = line['debit'] or line['credit']
@@ -406,6 +417,11 @@ class ReportConfigure(models.AbstractModel):
             if tv:
                 print("--------tk-----------",tk)
                 print("--------tv-----------",tv)
+                datetime_seq = ((datetime.datetime.today().strftime(
+                    "%Y-%m-%d %H:%M").replace("-", "")).replace(':',
+                                                                '')).replace(
+                    " ", '') + str(sap_seq).rjust(2, '0')
+                sap_seq += 1
                 total_amount = tv[0]['credit'] or tv[0]['debit']
                 if tv[0]['debit'] and tv[0]['credit']:
                     total_amount = abs(tv[0]['debit'] - tv[0]['credit'])
@@ -414,7 +430,7 @@ class ReportConfigure(models.AbstractModel):
                 total_debit_credit_amt += abs(total_amount)
                 position_header = '1SV'
                 position_header += company.x_acc_area.x_code.ljust(4, ' ')
-                position_header += company.x_acc_area.x_code.ljust(16, ' ')
+                position_header += datetime_seq.ljust(16, ' ')
                 position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
                 position_header += ''.ljust(10, ' ')
                 position_header += ''.ljust(12, ' ')
@@ -427,6 +443,13 @@ class ReportConfigure(models.AbstractModel):
                 position_header += ''.ljust(24, ' ')
                 f.write(position_header + '\n')
                 for line in tv:
+                    print("-------line['id']-------------", line['id'])
+                    aml_ids = line['id'].split('-')
+                    for aml in aml_ids:
+                        aml_ids = self.env['account.move.line'].browse(
+                            int(aml))
+                        print("--------aml_ids------------", aml_ids)
+                        aml_ids.x_sap_export_seq = datetime_seq
                     cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     amount = line['debit'] or line['credit']
@@ -457,7 +480,7 @@ class ReportConfigure(models.AbstractModel):
         position_footer += (datetime.date.today().strftime("%d-%m-%Y").replace("-", "")).ljust(8, ' ')
         position_footer += (current_time.replace(":", "")).ljust(6, " ")
         position_footer += company.x_sap_export_name.ljust(50, ' ')
-        position_footer += (company.x_sap_export_path + company.x_sap_export_file + datetime.date.today().strftime("%Y-%m-%d").replace("-", "")).ljust(50, ' ')
+        position_footer += (company.x_sap_export_path + company.x_sap_export_file + datetime.date.today().strftime("%Y-%m-%d").replace("-", ""))[:50].ljust(50, ' ')
         position_footer += ''.ljust(10, ' ')
         position_footer += ''.ljust(10, ' ')
         position_footer += ''.ljust(8, ' ')
