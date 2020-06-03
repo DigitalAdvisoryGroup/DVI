@@ -3,25 +3,28 @@
 # See LICENSE file for full copyright and licensing details.
 
 {
-    'name': "Switzerland - Accounting With QR Report",
+    'name': "JustThis - business processing for Swiss public prosecutor",
     'version': '1.0',
     'summary': """
-        Swiss localization with QR Code Report
+        Odoo customizations for JustThis project requirements (http://www.xplain.ch/wp/produkte/justthis/)
     """,
     'description': """
 
-Swiss localization
+JustThis - Business processing for Swiss public prosecutor
 ==================
 Swiss localization
 
 Description
 -----------
-    - This module will allow user to print QR code payment report.
+    This module supports specific JustThis requirements
+    - Swiss QR ISR
+    - Financial Closure management 
+    - Financial Clusure export to SAP ledger
 
     """,
 
-    'author': "Candidroot Solutions Pvt. Ltd.",
-    'website': "https://candidroot.com/",
+    'author': "Digital Advisory Group GmbH, Candidroot Solutions Pvt. Ltd.",
+    'website': "https://www.digitaladvisorygroup.io/",
     'category': 'Localization',
     'depends': ['l10n_ch_reports','account_reports'],
     'data': [
