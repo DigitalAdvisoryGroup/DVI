@@ -1,4 +1,4 @@
-odoo.define('l10n_ch_qr_report_cr.ActionManager', function (require) {
+odoo.define('justthis_customization.ActionManager', function (require) {
     "use strict";
     
     /**

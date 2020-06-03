@@ -14,9 +14,9 @@ class Company(models.Model):
     def _compute_l10n_ch_qr_code(self):
         get_param = self.env['ir.config_parameter'].sudo().get_param
         for company in self:
-            company.l10n_ch_qr_code = bool(get_param('l10n_ch_qr_report_cr.print_qr_code', default=False))
+            company.l10n_ch_qr_code = bool(get_param('justthis_customization.print_qr_code', default=False))
 
     def _set_l10n_ch_qr_code(self):
         set_param = self.env['ir.config_parameter'].sudo().set_param
         for company in self:
-            set_param("l10n_ch_qr_report_cr.print_qr_code", company.l10n_ch_qr_code)
+            set_param("justthis_customization.print_qr_code", company.l10n_ch_qr_code)

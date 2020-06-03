@@ -10,5 +10,5 @@ class AccountInvoice(models.Model):
 
     def display_swiss_qr_code(self):
         self.ensure_one()
-        qr_parameter = self.env['ir.config_parameter'].sudo().get_param('l10n_ch_qr_report_cr.print_qr_code')
+        qr_parameter = self.env['ir.config_parameter'].sudo().get_param('justthis_customization.print_qr_code')
         return self.partner_id.country_id.code == 'CH' and qr_parameter

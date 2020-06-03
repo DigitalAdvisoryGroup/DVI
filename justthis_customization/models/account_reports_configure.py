@@ -8,6 +8,7 @@ import io
 import json
 import os
 import re
+import tempfile
 from time import gmtime, strftime
 
 from odoo import models, fields, _, api
@@ -78,7 +79,7 @@ class AccountReportConfigured(models.Model):
     def _create_action_and_menu(self, parent_id):
         # create action and menu with corresponding external ids, in order to
         # remove those entries when deinstalling the corresponding module
-        module = self._context.get('install_module', 'l10n_ch_qr_report_cr')
+        module = self._context.get('install_module', 'justthis_customization')
         IMD = self.env['ir.model.data']
 
         for report in self:
@@ -214,9 +215,9 @@ class ReportConfigure(models.AbstractModel):
 
     def _get_templates(self):
         templates = super(ReportConfigure, self)._get_templates()
-        templates['main_template'] = 'l10n_ch_qr_report_cr.main_template_account_configure_report'
-        templates['line_template'] = 'l10n_ch_qr_report_cr.line_template_account_configure_report'
-        templates['search_template'] = 'l10n_ch_qr_report_cr.search_template_account_configure_report'
+        templates['main_template'] = 'justthis_customization.main_template_account_configure_report'
+        templates['line_template'] = 'justthis_customization.line_template_account_configure_report'
+        templates['search_template'] = 'justthis_customization.search_template_account_configure_report'
         return templates
 
     def _get_columns_name(self, options):
@@ -276,14 +277,11 @@ class ReportConfigure(models.AbstractModel):
         output.close()
 
     def get_sap_txt(self, options, json_data):
-        print("-------self-----------", self)
-        print("-------self-----------", self.env.context)
-        print("-------options-----------", options)
-        print("-------json_data-----------", json_data)
         if options['external']:
             raise UserError(_('Please select external ledger filter as Excluded.'))
         try:
-            with open('/tmp/sap.txt', 'a') as f:
+            file_path = tempfile.gettempdir()+'/sap.txt'
+            with open(file_path, 'a') as f:
                 company = self.env.user.company_id
                 header = 'A'
                 header += company.x_acc_area.x_code.ljust(4, ' ')
@@ -292,10 +290,10 @@ class ReportConfigure(models.AbstractModel):
                 header += '/'.ljust(1, " ")
                 f.write(header + '\n')
                 self.with_context(id=self.id).get_sap_export_lines(options, f)
-            content = open('/tmp/sap.txt').read()
-            os.remove("/tmp/sap.txt")
+            content = open(file_path).read()
+            os.remove(file_path)
         except:
-            os.remove("/tmp/sap.txt")
+            os.remove(file_path)
         return content
 
     def get_sap_export_lines(self, options, f):
@@ -314,7 +312,6 @@ class ReportConfigure(models.AbstractModel):
                     aml_ids = self.env['account.move.line'].search(
                         [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
                     if aml_ids and not options['external']: continue
-                    # print("----------move------------------",move)
                     if move.id not in final_move:
                         final_move.append(move.id)
                         final_move.sort(reverse=True)
@@ -361,8 +358,6 @@ class ReportConfigure(models.AbstractModel):
         sap_seq = 1
         for tk,tv in temp_dict.items():
             if tv:
-                print("--------tk-----------",tk)
-                print("--------tv-----------",tv)
                 datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':','')).replace(" ", '') + str(sap_seq).rjust(2,'0')
                 sap_seq += 1
                 total_amount = tv[0]['credit'] or tv[0]['debit']
@@ -386,12 +381,9 @@ class ReportConfigure(models.AbstractModel):
                 position_header += ''.ljust(24, ' ')
                 f.write(position_header + '\n')
                 for line in tv:
-                    print("-------line['id']-------------",line['id'])
                     aml_ids = str(line['id']).split('-')
-                    print("-------aml_ids----------",aml_ids)
                     for aml in aml_ids:
                         aml_ids = self.env['account.move.line'].browse(int(aml))
-                        print("--------aml_ids------------", aml_ids)
                         aml_ids.x_sap_export_seq = datetime_seq
                     cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
@@ -418,8 +410,6 @@ class ReportConfigure(models.AbstractModel):
 
         for tk,tv in final_dict.items():
             if tv:
-                print("--------tk-----------",tk)
-                print("--------tv-----------",tv)
                 datetime_seq = ((datetime.datetime.today().strftime(
                     "%Y-%m-%d %H:%M").replace("-", "")).replace(':',
                                                                 '')).replace(
@@ -446,12 +436,10 @@ class ReportConfigure(models.AbstractModel):
                 position_header += ''.ljust(24, ' ')
                 f.write(position_header + '\n')
                 for line in tv:
-                    print("-------line['id']-------------", line['id'])
                     aml_ids = line['id'].split('-')
                     for aml in aml_ids:
                         aml_ids = self.env['account.move.line'].browse(
                             int(aml))
-                        print("--------aml_ids------------", aml_ids)
                         aml_ids.x_sap_export_seq = datetime_seq
                     cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                     profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
@@ -475,9 +463,6 @@ class ReportConfigure(models.AbstractModel):
                     position += ''.ljust(3, ' ')
                     position += ''.ljust(24, ' ')
                     f.write(position + '\n')
-        print("-------total_debit_credit_amt----------",total_debit_credit_amt)
-        print("-------total_je----------",total_je)
-        print("-------total_records----------",total_records)
         current_time = strftime("%H:%M:%S", gmtime())
         position_footer = 'Z'
         position_footer += (datetime.date.today().strftime("%d-%m-%Y").replace("-", "")).ljust(8, ' ')

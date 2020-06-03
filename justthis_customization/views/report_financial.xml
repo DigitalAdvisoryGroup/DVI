@@ -21,7 +21,7 @@
             <xpath expr="//div[hasclass('o_account_reports_filter_bool')]" position="after">
                 <div class="btn-group o_dropdown o_account_reports_filter_external"
                      t-if="options.get('external') != None">
-                    <t t-call="l10n_ch_qr_report_cr.search_template_account_configure_external"/>
+                    <t t-call="justthis_customization.search_template_account_configure_external"/>
                 </div>
             </xpath>
         </template>

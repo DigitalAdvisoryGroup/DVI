@@ -22,8 +22,6 @@ class FinancialReportController(http.Controller):
         if financial_id and financial_id != 'null':
             report_obj = report_obj.browse(int(financial_id))
         report_name = report_obj.get_report_filename(options)
-        print("-----------output_format-----------",output_format)
-        print("-----------report_obj-----------",report_obj)
         try:
             if output_format == 'xlsx':
                 response = request.make_response(
@@ -53,7 +51,6 @@ class FinancialReportController(http.Controller):
                         ('Content-Length', len(content))
                     ]
                 )
-                print("-------------response-------------",response)
             response.set_cookie('fileToken', token)
             return response
         except Exception as e:

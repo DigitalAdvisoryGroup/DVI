@@ -11,7 +11,7 @@
     'description': """
 
 JustThis - Business processing for Swiss public prosecutor
-==================
+==========================================================
 Swiss localization
 
 Description
@@ -19,7 +19,7 @@ Description
     This module supports specific JustThis requirements
     - Swiss QR ISR
     - Financial Closure management 
-    - Financial Clusure export to SAP ledger
+    - Financial Closure export to SAP ledger
 
     """,
 

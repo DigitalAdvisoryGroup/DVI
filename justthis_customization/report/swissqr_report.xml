@@ -333,11 +333,11 @@
         </template>
 
 
-        <template id="l10n_ch_qr_report_cr.qr_code_report_main">
+        <template id="justthis_customization.qr_code_report_main">
             <t t-call="web.html_container">
                 <t t-foreach="docs" t-as="invoice">
                     <t t-set="o" t-value="invoice"/>
-                    <t t-call="l10n_ch_qr_report_cr.l10n_ch_qr_code_report_template"/>
+                    <t t-call="justthis_customization.l10n_ch_qr_code_report_template"/>
                 </t>
             </t>
         </template>

@@ -26,7 +26,7 @@ class MailTemplate(models.Model):
                 template = res_ids_to_templates[res_id]
                 report_name = 'QR-Code-' + self._render_template(template.report_name, template.model, res_id) + '.pdf'
 
-                pdf = self.env.ref('l10n_ch_qr_report_cr.l10n_ch_qr_code_report').render_qweb_pdf([res_id])[0]
+                pdf = self.env.ref('justthis_customization.l10n_ch_qr_code_report').render_qweb_pdf([res_id])[0]
                 pdf = base64.b64encode(pdf)
 
                 attachments_list = multi_mode and res[res_id].get('attachments', False) or res.get('attachments', False)
