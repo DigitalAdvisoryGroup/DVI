@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_account_invoice_depreciation" model="ir.ui.view">
+            <field name="name">account.invoice.depreciation.form</field>
+            <field name="model">account.invoice.depreciation</field>
+            <field name="arch" type="xml">
+                <form string="Depreciation Note">
+                    <group>
+                         <group>
+                             <field name="filter_refund" widget="radio"/>
+                         </group>
+                         <group>
+                             <div class="oe_grey" colspan="4">
+                                Use this option if you want to cancel an invoice you should not
+                                have issued. The depreciation note will be created, validated and reconciled
+                                with the invoice. You will not be able to modify the depreciation note.
+                             </div>
+                         </group>
+                         <group>
+                             <field name="description"/>
+                             <field name="depreciation_account_id" />
+                         </group>
+                         <group>
+                             <field name="date_invoice"/>
+                             <field name="date" groups="base.group_no_one"/>
+
+                         </group>
+                    </group>
+                    <footer>
+                        <button string='Add Depreciation Note' name="invoice_depreciation" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+               </form>
+            </field>
+        </record>
+
+        <record id="action_account_invoice_depreciation" model="ir.actions.act_window">
+            <field name="name">Depreciation Note</field>
+            <field name="res_model">account.invoice.depreciation</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+           <field name="view_id" ref="view_account_invoice_depreciation"/>
+           <field name="target">new</field>
+        </record>
+
+
+    </data>
+</odoo>

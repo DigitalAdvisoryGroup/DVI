@@ -20,6 +20,7 @@ Description
     - Swiss QR ISR
     - Financial Closure management 
     - Financial Closure export to SAP ledger
+    - 4-eyes-check depreciation handling
 
     """,
 
@@ -35,6 +36,8 @@ Description
             "views/report_menu_view.xml",
             "views/account_reports_configure_view.xml",
             "views/report_financial.xml",
+            "views/invoice_depreciation_wizard_view.xml",
+            # "views/account_invoice_view.xml"
     ],
     'demo': [
     ],
