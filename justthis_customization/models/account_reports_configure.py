@@ -279,6 +279,7 @@ class ReportConfigure(models.AbstractModel):
     def get_sap_txt(self, options, json_data):
         if options['external']:
             raise UserError(_('Please select external ledger filter as Excluded.'))
+        content = ''
         try:
             file_path = tempfile.gettempdir()+'/sap.txt'
             with open(file_path, 'a') as f:
@@ -321,7 +322,7 @@ class ReportConfigure(models.AbstractModel):
             for mv in final_move:
                 temp_dict.update({mv: []})
                 for aml in mv.line_ids:
-                    temp_dict[mv].append({'id': aml.id,'account_id': aml.account_id,'account_code': aml.x_code_external,'debit': aml.debit,
+                    temp_dict[mv].append({'id': aml.id,'account_id': aml.account_id,'account_code': aml.x_code_external or aml.account_id.x_code_external,'debit': aml.debit,
                                              'credit': aml.credit, 'analytic_account_id': aml.analytic_account_id})
             for k,v in temp_dict.items():
                 v_acc_id = [(x['account_id'].id, x['analytic_account_id'].id) for x in v]
