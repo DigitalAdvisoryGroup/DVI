@@ -19,7 +19,25 @@ class AccountInvoiceDepreciation(models.TransientModel):
         active_id = context.get('active_id', False)
         if active_id:
             inv = self.env['account.invoice'].browse(active_id)
-            return inv.x_reason_dep and "["+inv.x_reason_dep.x_code+"]-"+inv.x_reason_dep.x_name or False
+            return inv.x_reason_dep and inv.x_reason_dep.x_name or False
+        return ''
+
+    @api.model
+    def _get_inv_comment(self):
+        context = dict(self._context or {})
+        active_id = context.get('active_id', False)
+        if active_id:
+            inv = self.env['account.invoice'].browse(active_id)
+            return inv.x_comment_dep or False
+        return ''
+
+    @api.model
+    def _get_inv_user(self):
+        context = dict(self._context or {})
+        active_id = context.get('active_id', False)
+        if active_id:
+            inv = self.env['account.invoice'].browse(active_id)
+            return inv.x_user_dep or False
         return ''
 
     @api.model
@@ -35,7 +53,8 @@ class AccountInvoiceDepreciation(models.TransientModel):
     date_invoice = fields.Date(string='Depreciation Note Date',default=fields.Date.context_today,required=True)
     date = fields.Date(string='Accounting Date')
     description = fields.Char(string='Reason', required=True,default=_get_reason)
-    filter_refund = fields.Selection([('cancel','Cancel: create credit note and reconcile')],default='cancel', string='Credit Method',readonly=True)
+    inv_comment = fields.Char(string='Comment', required=True,default=_get_inv_comment)
+    inv_user = fields.Char(string='User', required=True,default=_get_inv_user)
     depreciation_account_id = fields.Many2one("account.account",'Depreciation Account', required=True,default=_get_deault_account_id)
 
 

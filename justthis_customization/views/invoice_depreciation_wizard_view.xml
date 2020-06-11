@@ -9,17 +9,9 @@
                 <form string="Depreciation Note">
                     <group>
                          <group>
-                             <field name="filter_refund" widget="radio"/>
-                         </group>
-                         <group>
-                             <div class="oe_grey" colspan="4">
-                                Use this option if you want to cancel an invoice you should not
-                                have issued. The depreciation note will be created, validated and reconciled
-                                with the invoice. You will not be able to modify the depreciation note.
-                             </div>
-                         </group>
-                         <group>
                              <field name="description"/>
+                             <field name="inv_comment"/>
+                             <field name="inv_user"/>
                              <field name="depreciation_account_id" />
                          </group>
                          <group>
