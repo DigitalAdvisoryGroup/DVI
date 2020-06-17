@@ -200,7 +200,7 @@ class ReportConfigure(models.AbstractModel):
                         if aml.account_id.id == account_id.id:
                             main_account_balance += aml.balance
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
-                           self.format_value(main_account_balance), '']
+                           self.format_value(main_account_balance), '','']
                 lines.append({
                     'id': str(line.id),
                     'name': '',
@@ -227,6 +227,7 @@ class ReportConfigure(models.AbstractModel):
         columns.append({'name': _('Account Name'), 'class': 'text'})
         columns.append({'name': _('Balance'), 'class': 'number'})
         columns.append({'name': _('External Balance'), 'class': 'number'})
+        columns.append({'name': _('External Note'), 'class': 'text'})
         return columns
 
     def get_custome_xlsx(self, options, response, json_data):
@@ -336,7 +337,7 @@ class ReportConfigure(models.AbstractModel):
                             temp_dict[kk] = []
             for k,v in final_dict.items():
                 del temp_dict[k]
-            res = self.parse_sap_move_lines(temp_dict,self.merge_final_dict_lines(final_dict), self.env.user.company_id, f)
+            res = self.parse_sap_move_lines(self.merge_final_dict_lines(temp_dict),self.merge_final_dict_lines(final_dict), self.env.user.company_id, f)
 
     def merge_final_dict_lines(self, final_dict):
         for k,v in final_dict.items():

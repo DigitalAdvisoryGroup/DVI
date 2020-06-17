@@ -46,8 +46,7 @@ class AccountInvoiceDepreciation(models.TransientModel):
         active_id = context.get('active_id', False)
         if active_id:
             inv = self.env['account.invoice'].browse(active_id)
-            if inv.invoice_line_ids:
-                return inv.invoice_line_ids[0].account_id and inv.invoice_line_ids[0].account_id.id or False
+            return inv.company_id.x_dep_default_account and inv.company_id.x_dep_default_account.id or False
         return False
 
     date_invoice = fields.Date(string='Depreciation Note Date',default=fields.Date.context_today,required=True)
