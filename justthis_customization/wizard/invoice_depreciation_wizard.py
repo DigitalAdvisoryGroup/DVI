@@ -49,12 +49,23 @@ class AccountInvoiceDepreciation(models.TransientModel):
             return inv.company_id.x_dep_default_account and inv.company_id.x_dep_default_account.id or False
         return False
 
+    @api.model
+    def _get_deault_analytic_id(self):
+        context = dict(self._context or {})
+        active_id = context.get('active_id', False)
+        if active_id:
+            inv = self.env['account.invoice'].browse(active_id)
+            if inv.invoice_line_ids:
+                return inv.invoice_line_ids[0].account_analytic_id and inv.invoice_line_ids[0].account_analytic_id.id or False
+        return False
+
     date_invoice = fields.Date(string='Depreciation Note Date',default=fields.Date.context_today,required=True)
     date = fields.Date(string='Accounting Date')
     description = fields.Char(string='Reason', required=True,default=_get_reason)
     inv_comment = fields.Char(string='Comment', required=True,default=_get_inv_comment)
     inv_user = fields.Char(string='User', required=True,default=_get_inv_user)
     depreciation_account_id = fields.Many2one("account.account",'Depreciation Account', required=True,default=_get_deault_account_id)
+    analytic_account_id = fields.Many2one("account.analytic.account",'Analytic Account', required=True,default=_get_deault_analytic_id)
 
 
     def _get_depreciation_refund(self, inv):
@@ -83,6 +94,7 @@ class AccountInvoiceDepreciation(models.TransientModel):
                 created_inv.append(refund.id)
                 for ref_line in refund.invoice_line_ids:
                     ref_line.account_id = rec.depreciation_account_id.id
+                    ref_line.account_analytic_id = rec.analytic_account_id.id
                 movelines = inv.move_id.line_ids
                 to_reconcile_ids = {}
                 to_reconcile_lines = self.env['account.move.line']
