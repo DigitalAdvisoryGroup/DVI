@@ -37,6 +37,7 @@ Description
             "views/account_reports_configure_view.xml",
             "views/report_financial.xml",
             "views/invoice_depreciation_wizard_view.xml",
+            "views/invoice_reversal_wizard_view.xml",
             # "views/account_invoice_view.xml"
     ],
     'demo': [

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_account_invoice_reversal" model="ir.ui.view">
+            <field name="name">account.invoice.reversal.form</field>
+            <field name="model">account.invoice.reversal</field>
+            <field name="arch" type="xml">
+                <form string="Reversal Note">
+                    <group>
+                        <field name="invoice_line_ids" domain="[('invoice_id','=',invoice_id)]" options="{'no_create': True, 'no_open': True}"/>
+                         <group>
+                             <field name="description"/>
+                             <field name="inv_comment"/>
+                             <field name="inv_user"/>
+                         </group>
+                         <group>
+                             <field name="date_invoice"/>
+                             <field name="date" groups="base.group_no_one"/>
+                             <field name="invoice_id" invisible="1"/>
+
+                         </group>
+                    </group>
+                    <footer>
+                        <button string='Add Reversal Note' name="invoice_reversal" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+               </form>
+            </field>
+        </record>
+
+        <record id="action_account_invoice_reversal" model="ir.actions.act_window">
+            <field name="name">Reversal Note</field>
+            <field name="res_model">account.invoice.reversal</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+           <field name="view_id" ref="view_account_invoice_reversal"/>
+           <field name="target">new</field>
+        </record>
+
+
+    </data>
+</odoo>

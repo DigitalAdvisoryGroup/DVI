@@ -3,3 +3,4 @@
 # See LICENSE file for full copyright and licensing details.
 
 from . import invoice_depreciation_wizard
+from . import invoice_reversal_wizard

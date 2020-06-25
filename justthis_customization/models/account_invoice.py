@@ -18,3 +18,18 @@ class AccountInvoice(models.Model):
         for inv in self:
             action = self.env.ref('justthis_customization.action_account_invoice_depreciation').read()[0]
             return action
+
+    @api.multi
+    def open_reversal_wizard(self):
+        for inv in self:
+            action = self.env.ref('justthis_customization.action_account_invoice_reversal').read()[0]
+            return action
+
+    @api.model
+    def _prepare_refund(self, invoice, date_invoice=None, date=None,
+                        description=None, journal_id=None):
+        res = super(AccountInvoice, self)._prepare_refund(invoice=invoice,date_invoice=date_invoice,date=date,description=description,journal_id=journal_id)
+        ctx = dict(self._context or {})
+        if ctx and ctx.get("sel_invoice_lines"):
+            res['invoice_line_ids'] = self._refund_cleanup_lines(ctx['sel_invoice_lines'])
+        return res

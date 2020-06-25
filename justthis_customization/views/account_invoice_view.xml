@@ -11,6 +11,10 @@
                             class="oe_highlight" string="Add Depreciation Note"
                             groups="account.group_account_invoice"
                             attrs="{'invisible': ['|',('type', '=', 'out_refund'), ('state', 'not in', ('open','in_payment','paid'))]}"/>
+                    <button name="open_reversal_wizard" type="object"
+                            class="oe_highlight" string="Add Reversal Note"
+                            groups="account.group_account_invoice"
+                            attrs="{'invisible': ['|',('type', '=', 'out_refund'), ('state', 'not in', ('open','in_payment','paid'))]}"/>
                 </xpath>
             </field>
         </record>
