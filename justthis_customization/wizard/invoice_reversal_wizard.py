@@ -24,7 +24,7 @@ class AccountInvoiceReversal(models.TransientModel):
         active_id = context.get('active_id', False)
         if active_id:
             inv = self.env['account.invoice'].browse(active_id)
-            return inv.x_reason_dep and inv.x_reason_dep.x_name or False
+            return inv.x_reason_rev and inv.x_reason_rev.x_name or False
         return ''
 
     @api.model
@@ -33,7 +33,7 @@ class AccountInvoiceReversal(models.TransientModel):
         active_id = context.get('active_id', False)
         if active_id:
             inv = self.env['account.invoice'].browse(active_id)
-            return inv.x_comment_dep or False
+            return inv.x_comment_rev or False
         return ''
 
     @api.model
@@ -42,7 +42,7 @@ class AccountInvoiceReversal(models.TransientModel):
         active_id = context.get('active_id', False)
         if active_id:
             inv = self.env['account.invoice'].browse(active_id)
-            return inv.x_user_dep or False
+            return inv.x_user_rev or False
         return ''
 
 
@@ -88,6 +88,10 @@ class AccountInvoiceReversal(models.TransientModel):
                         line.remove_move_reconcile()
                 refund.action_invoice_open()
                 for tmpline in refund.move_id.line_ids:
+                    tmpline.write({'x_reason_rev':inv.x_reason_rev and inv.x_reason_rev.id,
+                                   'x_comment_rev': inv.x_comment_rev,
+                                   'x_user_rev': inv.x_user_rev
+                                   })
                     if tmpline.account_id.id == inv.account_id.id:
                         to_reconcile_lines += tmpline
                 to_reconcile_lines.filtered(
