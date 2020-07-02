@@ -90,7 +90,8 @@ class AccountInvoiceReversal(models.TransientModel):
                 for tmpline in refund.move_id.line_ids:
                     tmpline.write({'x_reason_rev':inv.x_reason_rev and inv.x_reason_rev.id,
                                    'x_comment_rev': inv.x_comment_rev,
-                                   'x_user_rev': inv.x_user_rev
+                                   'x_user_rev': inv.x_user_rev,
+                                   'is_reversal_line': True,
                                    })
                     if tmpline.account_id.id == inv.account_id.id:
                         to_reconcile_lines += tmpline
@@ -100,4 +101,5 @@ class AccountInvoiceReversal(models.TransientModel):
                 invoice_domain = safe_eval(result['domain'])
                 invoice_domain.append(('id', 'in', created_inv))
                 result['domain'] = invoice_domain
+                rec.invoice_line_ids.write({'is_reversal': True})
                 return result

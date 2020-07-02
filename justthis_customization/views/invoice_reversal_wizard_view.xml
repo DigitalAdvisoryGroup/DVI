@@ -8,7 +8,7 @@
             <field name="arch" type="xml">
                 <form string="Reversal Note">
                     <group>
-                        <field name="invoice_line_ids" domain="[('invoice_id','=',invoice_id)]" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="invoice_line_ids" domain="[('invoice_id','=',invoice_id),('is_reversal','=',False)]" options="{'no_create': True, 'no_open': True}"/>
                          <group>
                              <field name="description"/>
                              <field name="inv_comment"/>

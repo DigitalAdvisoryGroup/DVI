@@ -80,5 +80,15 @@
             </xpath>
         </template>
 
+        <template id="search_template_account_configure_report" inherit_id="account_reports.search_template"
+                  primary="True">
+            <xpath expr="//div[hasclass('o_account_reports_filter_bool')]" position="after">
+                <div class="btn-group o_dropdown o_account_reports_filter_external"
+                     t-if="options.get('external') != None">
+                    <t t-call="justthis_customization.search_template_account_configure_external"/>
+                </div>
+            </xpath>
+        </template>
+
     </data>
 </odoo>

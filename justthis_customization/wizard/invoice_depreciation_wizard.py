@@ -107,6 +107,12 @@ class AccountInvoiceDepreciation(models.TransientModel):
                         line.remove_move_reconcile()
                 refund.action_invoice_open()
                 for tmpline in refund.move_id.line_ids:
+                    tmpline.write({
+                                  'x_reason_dep': inv.x_reason_dep and inv.x_reason_dep.id,
+                                  'x_comment_dep': inv.x_comment_dep,
+                                  'x_user_dep': inv.x_user_dep,
+                                  'x_amount_dep': inv.x_amount_dep,
+                                      })
                     if tmpline.account_id.id == inv.account_id.id:
                         to_reconcile_lines += tmpline
                 to_reconcile_lines.filtered(

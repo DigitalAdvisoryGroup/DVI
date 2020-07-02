@@ -2,7 +2,7 @@
 # Part of Odoo Module Developed by Candidroot Solutions Pvt. Ltd.
 # See LICENSE file for full copyright and licensing details.
 
-from odoo import models, api
+from odoo import models, api, fields
 
 
 class AccountInvoice(models.Model):
@@ -33,3 +33,19 @@ class AccountInvoice(models.Model):
         if ctx and ctx.get("sel_invoice_lines"):
             res['invoice_line_ids'] = self._refund_cleanup_lines(ctx['sel_invoice_lines'])
         return res
+
+    @api.model
+    def _get_payments_vals(self):
+        res = super(AccountInvoice, self)._get_payments_vals()
+        if self.payment_move_line_ids and res:
+            for payment in self.payment_move_line_ids:
+                for line in res:
+                    if line['payment_id'] == payment.id:
+                        line['is_reversal_line'] = payment.is_reversal_line
+        return res
+
+
+class AccountInvoiceLine(models.Model):
+    _inherit = 'account.invoice.line'
+
+    is_reversal = fields.Boolean("Is Reversal")
