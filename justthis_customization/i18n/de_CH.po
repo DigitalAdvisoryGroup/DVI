@@ -1,0 +1,35 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* justthis_customization
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 12.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-07-03 15:20+0000\n"
+"PO-Revision-Date: 2020-07-03 15:20+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: justthis_customization
+#: code:addons/justthis_customization/models/account_invoice.py:44
+#, python-format
+msgid "Depreciated on: "
+msgstr "Abgeschrieben am: "
+
+#. module: justthis_customization
+#: code:addons/justthis_customization/models/account_invoice.py:44
+#, python-format
+msgid "Paid on: "
+msgstr "Bezahlt am: "
+
+#. module: justthis_customization
+#: code:addons/justthis_customization/models/account_invoice.py:44
+#, python-format
+msgid "Reverted on: "
+msgstr "Storniert am: "
+

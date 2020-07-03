@@ -2,7 +2,7 @@
 # Part of Odoo Module Developed by Candidroot Solutions Pvt. Ltd.
 # See LICENSE file for full copyright and licensing details.
 
-from odoo import models, api, fields
+from odoo import models, api, fields, _
 
 
 class AccountInvoice(models.Model):
@@ -41,7 +41,7 @@ class AccountInvoice(models.Model):
             for payment in self.payment_move_line_ids:
                 for line in res:
                     if line['payment_id'] == payment.id:
-                        line['text_name'] = payment.is_reversal_line and "Reverted" or payment.is_depreciate_line and "Depreciated" or "Paid"
+                        line['text_name'] = payment.is_reversal_line and _("Reverted on: ") or payment.is_depreciate_line and _("Depreciated on: ") or _("Paid on: ")
         return res
 
 

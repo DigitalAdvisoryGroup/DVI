@@ -3,7 +3,7 @@
 
     <t t-extend="ShowPaymentInfo">
         <t t-jquery=".o_payment_label" t-operation="replace">
-            <i class="o_field_widget text-right o_payment_label"><t t-esc="line.text_name"></t> on <t t-esc="line.date"></t></i>
+            <i class="o_field_widget text-right o_payment_label"><t t-esc="line.text_name"></t><t t-esc="line.date"></t></i>
         </t>
     </t>
 
