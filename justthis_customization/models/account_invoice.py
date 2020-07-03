@@ -41,7 +41,7 @@ class AccountInvoice(models.Model):
             for payment in self.payment_move_line_ids:
                 for line in res:
                     if line['payment_id'] == payment.id:
-                        line['is_reversal_line'] = payment.is_reversal_line
+                        line['text_name'] = payment.is_reversal_line and "Reverted" or payment.is_depreciate_line and "Depreciated" or "Paid"
         return res
 
 

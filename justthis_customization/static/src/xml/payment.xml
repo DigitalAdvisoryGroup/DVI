@@ -3,12 +3,7 @@
 
     <t t-extend="ShowPaymentInfo">
         <t t-jquery=".o_payment_label" t-operation="replace">
-            <t t-if="line.is_reversal_line">
-                <i class="o_field_widget text-right o_payment_label">Reverted on <t t-esc="line.date"></t></i>
-            </t>
-            <t t-if="!line.is_reversal_line">
-                <i class="o_field_widget text-right o_payment_label">Paid on <t t-esc="line.date"></t></i>
-            </t>
+            <i class="o_field_widget text-right o_payment_label"><t t-esc="line.text_name"></t> on <t t-esc="line.date"></t></i>
         </t>
     </t>
 

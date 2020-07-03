@@ -112,6 +112,7 @@ class AccountInvoiceDepreciation(models.TransientModel):
                                   'x_comment_dep': inv.x_comment_dep,
                                   'x_user_dep': inv.x_user_dep,
                                   'x_amount_dep': inv.x_amount_dep,
+                                  'is_depreciate_line': True,
                                       })
                     if tmpline.account_id.id == inv.account_id.id:
                         to_reconcile_lines += tmpline

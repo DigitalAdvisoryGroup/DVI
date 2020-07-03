@@ -26,6 +26,7 @@ class AccountMoveLine(models.Model):
 
     x_code_external = fields.Char(related="account_id.x_code_external", store=True)
     is_reversal_line = fields.Boolean("Is Reversal Line")
+    is_depreciate_line = fields.Boolean("Is Depreciate Line")
 
 class ReportAccountFinancialReportLine(models.Model):
     _inherit = "account.financial.html.report.line"
