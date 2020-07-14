@@ -44,6 +44,30 @@ class AccountInvoice(models.Model):
                         line['text_name'] = payment.is_reversal_line and _("Reverted on: ") or payment.is_depreciate_line and _("Depreciated on: ") or _("Paid on: ")
         return res
 
+    @api.multi
+    @api.returns('self')
+    def refund_dep(self, date_invoice=None, date=None, description=None,
+               journal_id=None, dep_product_id=False,dep_amount=0.0,account_analytic_id=False):
+        new_invoices = self.browse()
+        for invoice in self:
+            # create the new invoice
+            values = self._prepare_refund(invoice, date_invoice=date_invoice,
+                                          date=date,
+                                          description=description,
+                                          journal_id=journal_id)
+            values['invoice_line_ids'] = [(0,0,{'name': dep_product_id.name,'product_id': dep_product_id.id,
+                                                'account_id': self.env.user.company_id.x_dep_default_account.id,
+                                                'quantity': 1.0,
+                                                'price_unit': dep_amount,'account_analytic_id': account_analytic_id})]
+            refund_invoice = self.create(values)
+            if invoice.type == 'out_invoice':
+                message = _(
+                    "This customer invoice depreciation note has been created from: <a href=# data-oe-model=account.invoice data-oe-id=%d>%s</a><br>Reason: %s") % (
+                          invoice.id, invoice.number, description)
+            refund_invoice.message_post(body=message)
+            new_invoices += refund_invoice
+        return new_invoices
+
 
 class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'
