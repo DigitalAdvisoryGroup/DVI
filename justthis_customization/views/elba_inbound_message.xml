@@ -1,9 +1,9 @@
 <odoo>
     <data>
-        <!-- x_inbound_elba tree view -->
-        <record id="x_inbound_elba_view_tree" model="ir.ui.view">
-            <field name="name">x_inbound_elba.view.tree</field>
-            <field name="model">x_inbound_elba</field>
+        <!-- inbound_elba_msg tree view -->
+        <record id="inbound_elba_msg_view_tree" model="ir.ui.view">
+            <field name="name">inbound_elba_msg.view.tree</field>
+            <field name="model">inbound_elba_msg</field>
             <field name="arch" type="xml">
                 <tree string="Inbound ELBA messages">
                     <field name="x_blart" string="Voucher type"/>
@@ -27,10 +27,10 @@
             </field>
         </record>
 
-        <!-- x_inbound_elba form view -->
-        <record id="x_inbound_elba_view_form" model="ir.ui.view">
-            <field name="name">x_inbound_elba.view.form</field>
-            <field name="model">x_inbound_elba</field>
+        <!-- inbound_elba_msg form view -->
+        <record id="inbound_elba_msg_view_form" model="ir.ui.view">
+            <field name="name">inbound_elba_msg.view.form</field>
+            <field name="model">inbound_elba_msg</field>
             <field name="arch" type="xml">
                 <form string="ELBA inbound message">
                     <header>
@@ -72,7 +72,7 @@
                             <field name="x_account_credit_id" string="Credit account"/>
                             <field name="x_account_debit_id" string="Debit account"/>
                             <field name="x_journal_id" string="Journal"/>
-                            <!-- <field name="x_elba_inbound_lines" string="Debit line items"/> -->
+                            <field name="x_elba_inbound_lines" string="Debit line items"/>
                             
                             </group>
                         </group>
@@ -102,10 +102,10 @@
         </record>
 
         <!-- model.name action window -->
-        <record id="x_inbound_elba_action" model="ir.actions.act_window">
+        <record id="inbound_elba_msg_action" model="ir.actions.act_window">
             <field name="name">Inbound ELBA messages</field>
             <field name="type">ir.actions.act_window</field>
-            <field name="res_model">x_inbound_elba</field>
+            <field name="res_model">inbound_elba_msg</field>
             <field name="view_mode">tree,form</field>
             <field name="view_type">form</field>
             <field name="help" type="html">
@@ -118,6 +118,6 @@
         </record>
 
         <!-- This Menu Item must have a parent and an action -->
-        <menuitem id="x_inbound_elba_menu_act" name="ELBA payments" parent="account.menu_finance_reports" action="x_inbound_elba_action" sequence="200"/>
+        <menuitem id="inbound_elba_msg_menu_act" name="ELBA payments" parent="account.menu_finance_reports" action="inbound_elba_msg_action" sequence="200"/>
     </data>
 </odoo>

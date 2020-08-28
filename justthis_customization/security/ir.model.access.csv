@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_account_report_configure_user,access_account_report_configure_manager,model_account_report_configure,account.group_account_user,1,0,0,0
 access_account_report_configure_manager,access_account_report_configure_manager,model_account_report_configure,account.group_account_manager,1,1,1,1
-access_x_inbound_elba,access_x_inbound_elba,model_x_inbound_elba,base.group_user,1,1,1,1
+access_inbound_elba_msg,access_inbound_elba_msg,model_inbound_elba_msg,base.group_user,1,1,1,1
+access_inbound_isr_msg,access_inbound_isr_msg,model_inbound_isr_msg,base.group_user,1,1,1,1

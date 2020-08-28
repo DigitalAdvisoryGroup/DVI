@@ -5,8 +5,8 @@
 from odoo import models, api, fields, _
 
 
-class Inbound(models.Model):
-    _name = 'x_inbound_elba'
+class InboundElbaMsg(models.Model):
+    _name = 'inbound_elba_msg'
 
 
     x_acc_template_id = fields.Char(string="Accounting Events Template")
@@ -20,7 +20,7 @@ class Inbound(models.Model):
     x_cpudt = fields.Char(string="Update ELBA record date")
     x_cputm = fields.Char(string="Update ELBA record time")
     x_dmbtr = fields.Float(string="Amount")
-    # x_elba_inbound_lines = fields.Many2many('x_inbound_elba',string="Debit line item")
+    x_elba_inbound_lines = fields.Many2many('inbound_elba_msg',string="Debit line item",compute="compute_x_elba_inbound_lines")
     x_elba_msg_timestamp = fields.Datetime(string="ELBA webservice msg timestamp")
     x_elba_transfer_session_date = fields.Datetime(string="ELBA webservice session timestamp")
     x_elba_transfer_session_id = fields.Char(string="ELBA webservice session id")
@@ -36,6 +36,11 @@ class Inbound(models.Model):
     x_zz_jt_refn = fields.Char(string="ELBA JustThis reference")
     x_zz_jt_ukon = fields.Char(string="Justthis sub account")
     x_zz_zuweis = fields.Char(string="ELBA assignment")
+
+    def compute_x_elba_inbound_lines(self):
+        for record in self: 
+            if record['x_shkzg'] == 'H':
+                record['x_elba_inbound_lines'] = self.env['x_inbound_elba'].search([('x_belnr','=',record['x_belnr']),('x_shkzg','=','S')]).ids
 
     def create_je_elba_message(self):
         for rec in self:
@@ -55,6 +60,9 @@ class Inbound(models.Model):
                     aml_lines.append((0,0,line_data))
             self.env['account.move'].create({'journal_id':rec.x_journal_id.id,'ref':rec.x_belnr,'line_ids':aml_lines})
             
+
+class InboundIsrMsg(models.Model):
+    _name = "inbound_isr_msg"
 
 
 
