@@ -1,0 +1,123 @@
+<odoo>
+    <data>
+        <!-- x_inbound_elba tree view -->
+        <record id="x_inbound_elba_view_tree" model="ir.ui.view">
+            <field name="name">x_inbound_elba.view.tree</field>
+            <field name="model">x_inbound_elba</field>
+            <field name="arch" type="xml">
+                <tree string="Inbound ELBA messages">
+                    <field name="x_blart" string="Voucher type"/>
+                    <field name="x_name" string="Booking number"/>
+                    <field name="x_belnr" string="ELBA voucher"/>
+                    <field name="x_xblnr" string="ELBA reference"/>
+                    <field name="x_zz_jt_refn" string="JustThis ELBA reference"/>
+                    <field name="x_zz_zuweis" string="ELBA assignment"/>
+                    <field name="x_dmbtr" string="Amount"/>
+                    <field name="x_shkzg" string="D/C"/>
+                    <field name="x_account_credit_id" string="Credit account"/>
+                    <field name="x_account_debit_id" string="Debit account"/>
+                    
+                    <field name="x_sgtxt" string="Posting text"/>
+                    <field name="x_elba_transfer_session_id" string="ELBA Webservice ID"/>
+                    <!--
+                    <field name="x_elba_transfer_session_date" string="Session Timestamp"/>
+                    -->
+                    <field name="x_elba_msg_timestamp" string="Message Timestamp"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- x_inbound_elba form view -->
+        <record id="x_inbound_elba_view_form" model="ir.ui.view">
+            <field name="name">x_inbound_elba.view.form</field>
+            <field name="model">x_inbound_elba</field>
+            <field name="arch" type="xml">
+                <form string="ELBA inbound message">
+                    <header>
+                        <button name="create_je_elba_message" string="Post" type="object" class="oe_highlight" />
+                    </header>
+                    
+                    <h1>
+                        <field name="x_sgtxt" readonly="True" attrs="{'invisible':[('x_move_id','=','/')]}"/>
+                    </h1>
+                    <group>
+                        <group>
+                        <field name="x_move_id" string="Booking number"/>
+                        <field name="x_belnr" string="ELBA Voucher"/>
+                        <field name="x_xblnr" string="ELBA Reference"/>
+                        <field name="x_zz_zuweis" string="ELBA assignment"/>
+                        <field name="x_zz_jt_refn" string="JustThis ELBA reference"/>
+                        <field name="x_budat" string="ELBA booking date"/>
+                        <field name="x_dmbtr" string="Amount"/>
+                        <field name="x_reason_nok" string="NOK Reason"/>
+                        </group>
+                    </group>
+                        
+                    <notebook colspan="4">
+                        <page string="ELBA information">
+                        <group name="row1" col="3">
+                            <group name = "group_left">
+                            <field name="x_blart" string="ELBA voucher type"/>
+                            <field name="x_shkzg" string="Debit / Credit flag"/>
+                            <field name="x_sgtxt" string="Posting text"/>
+                            <field name="x_hkont" string="ELBA GL account"/>
+                            <field name="x_cpudt" string="ELBA update date"/>
+                            <field name="x_cputm" string="ELBA update time"/>
+                            </group>
+                        </group>
+                        </page>
+                        <page string="Accounting Information">
+                        <group name="row1" col="3">
+                            <group name = "group_left">
+                            <field name="x_account_credit_id" string="Credit account"/>
+                            <field name="x_account_debit_id" string="Debit account"/>
+                            <field name="x_journal_id" string="Journal"/>
+                            <!-- <field name="x_elba_inbound_lines" string="Debit line items"/> -->
+                            
+                            </group>
+                        </group>
+                        </page>
+                        <page string="JustThis information">
+                        <group name="row1" col="3">
+                            <group name = "group_left">
+                            <field name="x_zz_jt_ukon" string="Justthis sub account"/>
+                            <field name="x_acc_template_id" string="Accounting Events Template"/>
+                            </group>
+                        </group>
+                        </page>
+                        <page string="Session information">
+                        <group name="row1" col="3">
+                            <group name = "group_left">
+                            <field name="x_elba_transfer_session_id" string="ELBA Webservice ID"/>
+                            <field name="x_elba_transfer_session_date" string="ELBA webservice msg timestamp"/>
+                            <field name="x_elba_msg_timestamp" string="ELBA Webservice ID"/>
+                            <field name="create_date"/>
+                            <field name="create_uid"/>
+                            </group>
+                        </group>
+                        </page>
+                    </notebook>
+                    </form>
+            </field>
+        </record>
+
+        <!-- model.name action window -->
+        <record id="x_inbound_elba_action" model="ir.actions.act_window">
+            <field name="name">Inbound ELBA messages</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">x_inbound_elba</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    <!-- Add Text Here -->
+                </p><p>
+                    <!-- More details about what a user can do with this object will be OK --> 
+                </p>
+            </field>
+        </record>
+
+        <!-- This Menu Item must have a parent and an action -->
+        <menuitem id="x_inbound_elba_menu_act" name="ELBA payments" parent="account.menu_finance_reports" action="x_inbound_elba_action" sequence="200"/>
+    </data>
+</odoo>

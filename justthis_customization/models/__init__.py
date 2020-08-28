@@ -7,3 +7,4 @@ from . import res_config_settings
 from . import res_company
 from . import mail_template
 from . import account_reports_configure
+from . import elba_inbound_message

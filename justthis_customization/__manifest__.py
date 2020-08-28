@@ -27,7 +27,7 @@ Description
     'author': "Digital Advisory Group GmbH, Candidroot Solutions Pvt. Ltd.",
     'website': "https://www.digitaladvisorygroup.io/",
     'category': 'Localization',
-    'depends': ['l10n_ch_reports','account_reports','account'],
+    'depends': ['l10n_ch_reports','account_reports','account','base'],
     'data': [
             "security/ir.model.access.csv",
             "views/asset_templates.xml",
@@ -38,6 +38,7 @@ Description
             "views/report_financial.xml",
             "views/invoice_depreciation_wizard_view.xml",
             "views/invoice_reversal_wizard_view.xml",
+            "views/elba_inbound_message.xml",
             # "views/account_invoice_view.xml"
     ],
     'demo': [
