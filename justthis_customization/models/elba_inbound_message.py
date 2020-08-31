@@ -40,7 +40,7 @@ class InboundElbaMsg(models.Model):
     def compute_x_elba_inbound_lines(self):
         for record in self: 
             if record['x_shkzg'] == 'H':
-                record['x_elba_inbound_lines'] = self.env['x_inbound_elba'].search([('x_belnr','=',record['x_belnr']),('x_shkzg','=','S')]).ids
+                record['x_elba_inbound_lines'] = self.env['inbound_elba_msg'].search([('x_belnr','=',record['x_belnr']),('x_shkzg','=','S')]).ids
 
     def create_je_elba_message(self):
         for rec in self:
