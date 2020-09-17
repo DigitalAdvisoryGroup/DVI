@@ -3,6 +3,7 @@
 # See LICENSE file for full copyright and licensing details.
 
 from odoo import models, api, fields, _
+from odoo.exceptions import UserError
 
 
 class InboundElbaMsg(models.Model):
@@ -44,21 +45,43 @@ class InboundElbaMsg(models.Model):
 
     def create_je_elba_message(self):
         for rec in self:
-            aml_lines = [(0,0,{'account_id':rec.x_account_credit_id.id,'credit':rec.x_dmbtr})]
+            if rec.x_shkzg == "S" or rec.x_move_id:
+                raise UserError(_('You can not create Journal Entry for Debit lines or Has already Booking number'))
+            aml_lines = [(0,0,{'account_id':rec.x_account_credit_id.id,
+                               'credit':rec.x_dmbtr,
+                               'x_blart': rec.x_blart,
+                               'x_belnr': rec.x_belnr,
+                               'x_budat': rec.x_budat,
+                               'x_sgtxt': rec.x_sgtxt,
+                               'x_hkont': rec.x_hkont,
+                               'x_zz_jt_ukon': rec.x_zz_jt_ukon,
+                               'x_zz_jt_refn': rec.x_zz_jt_refn,
+                               'x_zz_zuweis': rec.x_zz_zuweis,
+                               'x_xblnr': rec.x_xblnr,
+                               'x_stblg': rec.x_stblg
+                               })]
             if rec.x_shkzg == "H":
                 for line in rec.x_elba_inbound_lines:
-                    account_id = rec.x_account_credit_id.id
-                    if line.x_shkzg == 'H':
-                        account_id = line.x_account_credit_id.id
-                    else:
-                        account_id = line.x_account_debit_id.id
-                    line_data = {'account_id':account_id}
-                    if line.x_shkzg == "H":
-                        line_data.update({'credit':line.x_dmbtr})
-                    else:
-                        line_data.update({'debit':line.x_dmbtr})
-                    aml_lines.append((0,0,line_data))
-            self.env['account.move'].create({'journal_id':rec.x_journal_id.id,'ref':rec.x_belnr,'line_ids':aml_lines})
+                    aml_lines.append((0,0,{'account_id':line.x_account_debit_id.id,
+                                           'debit':line.x_dmbtr,
+                                           'x_blart': line.x_blart,
+                                           'x_belnr': line.x_belnr,
+                                           'x_budat': line.x_budat,
+                                           'x_sgtxt': line.x_sgtxt,
+                                           'x_hkont': line.x_hkont,
+                                           'x_zz_jt_ukon': line.x_zz_jt_ukon,
+                                           'x_zz_jt_refn': line.x_zz_jt_refn,
+                                           'x_zz_zuweis': line.x_zz_zuweis,
+                                           'x_xblnr': line.x_xblnr,
+                                           'x_stblg': line.x_stblg
+                                           }))
+            move_id = self.env['account.move'].create({'journal_id':rec.x_journal_id.id,'ref':rec.x_belnr,'line_ids':aml_lines})
+            if move_id:
+                move_id.action_post()
+                rec.x_move_id = move_id.id
+                rec.x_elba_inbound_lines.write({"x_move_id":move_id.id})
+
+
             
 
 class InboundIsrMsg(models.Model):
