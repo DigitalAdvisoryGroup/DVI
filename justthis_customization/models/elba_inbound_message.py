@@ -27,7 +27,7 @@ class InboundElbaMsg(models.Model):
     x_elba_transfer_session_id = fields.Char(string="ELBA webservice session id")
     x_hkont = fields.Char(string="ELBA GL account")
     x_journal_id = fields.Many2one('account.journal',string="Journal")
-    x_move_id = fields.Many2one('account.move',string="Journal entry id")
+    x_move_id = fields.Many2one('account.move',string="Journal entry id", compute="_get_move_name", store=True)
     x_name = fields.Char(string="Booking number")
     x_reason_nok = fields.Char(string="Reason for not posting")
     x_sgtxt = fields.Char(string="Posting text")
@@ -38,10 +38,23 @@ class InboundElbaMsg(models.Model):
     x_zz_jt_ukon = fields.Char(string="Justthis sub account")
     x_zz_zuweis = fields.Char(string="ELBA assignment")
 
+    @api.depends("x_name")
+    def _get_move_name(self):
+        for record in self:
+            move_id = self.env['account.move'].search([('name', '=', record['x_name'])], limit=1)
+            record['x_move_id'] = move_id and move_id.id or False
+
     def compute_x_elba_inbound_lines(self):
         for record in self: 
             if record['x_shkzg'] == 'H':
                 record['x_elba_inbound_lines'] = self.env['inbound_elba_msg'].search([('x_belnr','=',record['x_belnr']),('x_shkzg','=','S')]).ids
+
+    @api.onchange("x_zz_jt_refn")
+    def onchange_x_zz_jt_refn(self):
+        if self.x_zz_jt_refn and self.x_elba_inbound_lines:
+            self.x_elba_inbound_lines.write({"x_zz_jt_refn":self.x_zz_jt_refn})
+
+
 
     def create_je_elba_message(self):
         for rec in self:
@@ -78,8 +91,8 @@ class InboundElbaMsg(models.Model):
             move_id = self.env['account.move'].create({'journal_id':rec.x_journal_id.id,'ref':rec.x_belnr,'line_ids':aml_lines})
             if move_id:
                 move_id.action_post()
-                rec.x_move_id = move_id.id
-                rec.x_elba_inbound_lines.write({"x_move_id":move_id.id})
+                rec.x_name = move_id.name
+                rec.x_elba_inbound_lines.write({"x_name":move_id.name})
 
 
             

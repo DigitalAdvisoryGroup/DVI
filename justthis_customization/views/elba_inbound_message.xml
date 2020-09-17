@@ -72,7 +72,7 @@
                             <field name="x_account_credit_id" string="Credit account"/>
                             <field name="x_account_debit_id" string="Debit account"/>
                             <field name="x_journal_id" string="Journal"/>
-                            <field name="x_elba_inbound_lines" string="Debit line items"/>
+                            <field name="x_elba_inbound_lines" string="Debit line items" readonly="0" force_save="1"/>
                             
                             </group>
                         </group>
