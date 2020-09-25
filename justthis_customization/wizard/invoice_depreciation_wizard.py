@@ -122,6 +122,27 @@ class AccountInvoiceDepreciation(models.TransientModel):
                         to_reconcile_lines += tmpline
                 to_reconcile_lines.filtered(
                     lambda l: l.reconciled == False).reconcile()
+                res_justthis_vals = {
+                    "x_jt_crt_uname": inv.x_jt_crt_uname,
+                    "x_jt_crt_uid": inv.x_jt_crt_uid,
+                    "x_jt_upd_uname": inv.x_jt_upd_uname,
+                    "x_jt_upd_uid": inv.x_jt_upd_uid,
+                    "x_acc_template_id": inv.x_acc_template_id,
+                    "x_acc_upd_template_id": inv.x_acc_upd_template_id,
+                    "x_jt_activity_id": inv.x_jt_activity_id,
+                    "x_jt_main1_id": inv.x_jt_main1_id,
+                    "x_jt_main2_id": inv.x_jt_main2_id,
+                    "x_orig_isr_number": inv.x_orig_isr_number,
+
+                }
+                refund.write(res_justthis_vals)
+                x_jt_dep_status = "dep"
+                if inv.x_amount_dep < inv.amount_total:
+                    x_jt_dep_status = "dep_part"
+                refund.x_jt_dep_status = x_jt_dep_status
+                inv.x_jt_dep_status = x_jt_dep_status
+                if refund.move_id:
+                    refund.move_id.write(res_justthis_vals)
                 result = self.env.ref('account.action_invoice_out_refund').read()[0]
                 invoice_domain = safe_eval(result['domain'])
                 invoice_domain.append(('id', 'in', created_inv))
