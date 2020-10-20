@@ -8,3 +8,4 @@ from . import res_company
 from . import mail_template
 from . import account_reports_configure
 from . import elba_inbound_message
+from . import res_partner
