@@ -201,12 +201,13 @@ class ReportConfigure(models.AbstractModel):
                         if aml.account_id.id == account_id.id:
                             main_account_balance += aml.balance
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
-                           self.format_value(main_account_balance), '','']
+                           self.format_value(main_account_balance), '','','']
                 lines.append({
                     'id': str(line.id),
                     'name': '',
                     'columns': [{'name': v} for v in columns],
                 })
+        print("------------lines",lines)
         return lines
 
     def _get_reports_buttons(self):
@@ -226,8 +227,9 @@ class ReportConfigure(models.AbstractModel):
         columns.append({'name': _('Account Code'), 'class': 'text'})
         columns.append({'name': _('Account External Code'), 'class': 'text'})
         columns.append({'name': _('Account Name'), 'class': 'text'})
-        columns.append({'name': _('Balance'), 'class': 'number'})
-        columns.append({'name': _('External Balance'), 'class': 'number'})
+        columns.append({'name': _('Balance'), 'class': 'number vdb-balance'})
+        columns.append({'name': _('External Balance'), 'class': 'number external-balance-vdb'})
+        columns.append({'name': _('Total Balance'), 'class': 'total-balance'})
         columns.append({'name': _('External Note'), 'class': 'text'})
         return columns
 
@@ -262,6 +264,14 @@ class ReportConfigure(models.AbstractModel):
                     d = float(d)
                     sheet.write(y, count, d, currency_format)
                 elif d and ((data.get("Balance") and data['Balance'] or False) or (
+                        data.get("Saldo") and data['Saldo'] or False)) == d:
+                    sign = 1
+                    if '-' in d:
+                        sign = -1
+                    d = re.sub("[^\d\.]", "", d)
+                    d = float(d)
+                    sheet.write(y, count, d * sign, currency_format)
+                elif d and ((data.get("Total Balance") and data['Total Balance'] or False) or (
                         data.get("Saldo") and data['Saldo'] or False)) == d:
                     sign = 1
                     if '-' in d:

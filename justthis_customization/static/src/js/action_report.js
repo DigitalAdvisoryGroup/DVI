@@ -10,6 +10,25 @@ odoo.define('justthis_customization.ActionManager', function (require) {
     var crash_manager = require('web.crash_manager');
     var framework = require('web.framework');
     var session = require('web.session');
+    var accountReportsWidget = require('account_reports.account_report')
+
+    accountReportsWidget.include({
+        events: _.extend({}, accountReportsWidget.prototype.events, {
+            'change .external-balance-vdb': '_onChangeExternal',
+        }),
+
+        _onChangeExternal:function(event){
+            var vdb_balance = $(event.target).closest('tr').find('.vdb-balance').find('span').text();
+            var input = $(event.target).val();
+            var balance = vdb_balance.replace("CHF","").replace(",","");
+            var balance = parseFloat(balance.replace(",",""))
+            if(input > 0){
+                var total = balance-input;
+                var total = total.toFixed(2);
+                $(event.target).closest('tr').find('.total-balance').find('input').val(total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")+" CHF");
+            }
+        }
+    })
     
     ActionManager.include({
         //--------------------------------------------------------------------------
@@ -100,5 +119,5 @@ odoo.define('justthis_customization.ActionManager', function (require) {
             }
     });
     
-    });
+});
     

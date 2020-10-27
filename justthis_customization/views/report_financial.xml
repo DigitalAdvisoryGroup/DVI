@@ -48,10 +48,17 @@
                                 </td>
                             </t>
                             <t t-if="column.get('name') == ''">
+                                <t t-set="col_class" t-value="column.get('class', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('class', ''))"/>
                                 <td t-att-class="'o_account_report_line ' + (column.get('class', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('class', '')) + (line.get('unfoldable') and ' o_foldable_total' or '')) + ('' if hierarchies_enabled else ' o_account_report_line_indent')"
                                     t-att-style="column.get('style', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('style', ''))">
-                                    <input type="text" class="o_account_report_column_value" id="ext_balance"
-                                           name="test"/>
+                                    <t t-if="col_class == 'total-balance'">
+                                        <input type="text" disabled="disabled" class="o_account_report_column_value" id="ext_balance"
+                                            name="test"/>
+                                    </t>
+                                    <t t-if="col_class != 'total-balance'">
+                                        <input type="text" class="o_account_report_column_value" id="ext_balance"
+                                            name="test"/>
+                                    </t>
                                 </td>
                             </t>
 
