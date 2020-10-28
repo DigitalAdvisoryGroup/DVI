@@ -3,6 +3,7 @@
 # See LICENSE file for full copyright and licensing details.
 
 from odoo import models, api, fields, _
+from odoo.exceptions import UserError
 
 
 class AccountInvoice(models.Model):
@@ -11,19 +12,21 @@ class AccountInvoice(models.Model):
     def display_swiss_qr_code(self):
         self.ensure_one()
         qr_parameter = self.env['ir.config_parameter'].sudo().get_param('justthis_customization.print_qr_code')
-        print("---------self.partner_id.country_id.code--------",self.partner_id.country_id.code)
-        print("---------self.partner_id.country_id.code--------",qr_parameter)
         return self.partner_id.country_id.code == 'CH' and qr_parameter
 
     @api.multi
     def open_depreciation_wizard(self):
         for inv in self:
+            if self.env.user.name == inv.x_user_dep:
+                raise UserError(_('You can not depreciation your own invoice'))
             action = self.env.ref('justthis_customization.action_account_invoice_depreciation').read()[0]
             return action
 
     @api.multi
     def open_reversal_wizard(self):
         for inv in self:
+            if self.env.user.name == inv.x_user_dep:
+                raise UserError(_('You can not reversal your own invoice'))
             action = self.env.ref('justthis_customization.action_account_invoice_reversal').read()[0]
             return action
 

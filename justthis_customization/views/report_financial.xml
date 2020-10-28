@@ -53,11 +53,11 @@
                                     t-att-style="column.get('style', lines.get('columns_header')[-1][column_index+line.get('colspan', 1)].get('style', ''))">
                                     <t t-if="col_class == 'total-balance'">
                                         <input type="text" disabled="disabled" class="o_account_report_column_value" id="ext_balance"
-                                            name="test"/>
+                                            name="test" style="text-align: right;"/>
                                     </t>
                                     <t t-if="col_class != 'total-balance'">
                                         <input type="text" class="o_account_report_column_value" id="ext_balance"
-                                            name="test"/>
+                                            name="test" style="text-align: right;"/>
                                     </t>
                                 </td>
                             </t>

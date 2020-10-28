@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="account_report_partner_ledger_view" model="ir.ui.view">
+        <field name="name">account.financial.report.partner.ledger</field>
+        <field name="model">account.financial.report.pdf</field>
+        <field name="arch" type="xml">
+            <form string="Partner Ledger">
+                <sheet>
+                    <group col="2" colspan="4">
+                        <field name="partner_id"/>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="journal_ids" widget="many2many_tags" invisible="1"/>
+                        <field name="display_account" invisible="1"/>
+                        <field name="reconciled" invisible="1"/>
+                        <field name="target_move" invisible="1"/>
+                        <field name="amount_currency" invisible="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="check_report" string="Print" type="object" class="oe_highlight"/>
+                    or
+                    <button string="Cancel" class="oe_link" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <act_window name="Partner Ledger"
+                res_model="account.financial.report.pdf"
+                src_model="res.partner"
+                key2="client_action_multi"
+                multi="False"
+                view_mode="form"
+                view_type="form"
+                target="new"
+                id="action_account_partner_ledger_menu"/>
+
+</odoo>
