@@ -42,6 +42,7 @@ Description
             # "views/account_invoice_view.xml"
             "wizard/account_report_wizard_view.xml",
             "report/report_partnerledger_pdf.xml",
+            "views/account_journal_dashboard.xml"
     ],
     'demo': [
     ],

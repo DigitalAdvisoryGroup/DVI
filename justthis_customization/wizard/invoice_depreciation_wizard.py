@@ -147,4 +147,5 @@ class AccountInvoiceDepreciation(models.TransientModel):
                 invoice_domain = safe_eval(result['domain'])
                 invoice_domain.append(('id', 'in', created_inv))
                 result['domain'] = invoice_domain
+                inv.invoice_line_ids.write({'is_depreciation': True})
                 return result

@@ -78,3 +78,50 @@ class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'
 
     is_reversal = fields.Boolean("Is Reversal")
+    is_depreciation = fields.Boolean("Is Depreciation")
+
+
+
+class account_journal(models.Model):
+    _inherit = "account.journal"
+
+    is_isr_journal = fields.Boolean("Is ISR Journal?")
+
+    
+    @api.multi
+    def get_journal_dashboard_datas(self):
+        data = dict(
+            super(account_journal, self).get_journal_dashboard_datas(),
+            reversal_count=self.env['account.invoice'].search_count([('x_reason_rev','!=',False)]),
+            depreciation_count=self.env['account.invoice'].search_count([('x_reason_dep','!=',False)]),
+            reversed_invoice_count=self.env['account.invoice'].search_count([('invoice_line_ids.is_reversal','=',True)]),
+            fully_invoice_count=self.env['account.invoice'].search_count([('invoice_line_ids.is_depreciation','=',True),('residual','<',1)]),
+            partial_invoice_count=self.env['account.invoice'].search_count([('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0)]),
+            isr_record_count=self.env['inbound_isr_msg'].search_count([('x_invoice_id','=',False)])
+        )
+        return data
+
+
+    @api.multi
+    def open_action_justthis(self):
+        """return action based on type for related appointment states"""
+        action_name = self._context.get('action_name', False)
+        ctx = self._context.copy()
+        ctx.update({})
+        [action] = self.env.ref(action_name).read()
+        action['context'] = ctx
+        action_type = self._context.get('action_type')
+        if action_type == 'reversal':
+            action['domain'] = [('type','=','out_invoice'),('x_reason_rev','!=',False)]
+        elif action_type == 'depreciation':
+            action['domain'] = [('type','=','out_invoice'),('x_reason_dep','!=',False)]
+        elif action_type == 'reversed_invoice':
+            action['domain'] = [('invoice_line_ids.is_reversal','=',True)]
+        elif action_type == 'full_depreciation':
+            action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','<',1)]
+        elif action_type == 'partial_depreciation':
+            action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0)]
+        elif action_type == 'isr_invoice':
+            action['domain'] = [('x_invoice_id','=',False)]
+
+        return action
