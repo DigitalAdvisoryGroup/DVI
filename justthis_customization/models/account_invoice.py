@@ -26,7 +26,7 @@ class AccountInvoice(models.Model):
     @api.multi
     def open_reversal_wizard(self):
         for inv in self:
-            if self.env.user.name == inv.x_user_dep:
+            if self.env.user.name == inv.x_user_rev:
                 raise UserError(_('You can not reversal your own invoice'))
             action = self.env.ref('justthis_customization.action_account_invoice_reversal').read()[0]
             return action
@@ -91,11 +91,11 @@ class account_journal(models.Model):
     
     @api.multi
     def get_journal_dashboard_datas(self):
-        reversal_count = self.env['account.invoice'].search([('x_reason_rev','!=',False)])
-        depreciation_count = self.env['account.invoice'].search([('x_reason_dep','!=',False)])
-        reversed_invoice_count = self.env['account.invoice'].search([('invoice_line_ids.is_reversal','=',True)])
-        fully_invoice_count = self.env['account.invoice'].search([('invoice_line_ids.is_depreciation','=',True),('residual','<',1)])
-        partial_invoice_count = self.env['account.invoice'].search([('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0)])
+        reversal_count = self.env['account.invoice'].search([('type','=','out_invoice'),('x_reason_rev','!=',False),('invoice_line_ids.is_reversal','=',False),('state','!=','cancel')])
+        depreciation_count = self.env['account.invoice'].search([('type','=','out_invoice'),('x_reason_dep','!=',False),('invoice_line_ids.is_depreciation','=',False),('state','!=','cancel')])
+        reversed_invoice_count = self.env['account.invoice'].search([('type','=','out_invoice'),('invoice_line_ids.is_reversal','=',True),('state','!=','cancel')])
+        fully_invoice_count = self.env['account.invoice'].search([('type','=','out_invoice'),('invoice_line_ids.is_depreciation','=',True),('residual','<',1),('state','!=','cancel')])
+        partial_invoice_count = self.env['account.invoice'].search([('type','=','out_invoice'),('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0),('state','!=','cancel')])
         isr_record_count = self.env['inbound_isr_msg'].search([('x_invoice_id','=',False)])
         currency = self.currency_id or self.company_id.currency_id
         reversal_count_sum = formatLang(self.env, currency.round(sum(reversal_count.mapped('amount_total'))) + 0.0, currency_obj=currency)
@@ -131,15 +131,15 @@ class account_journal(models.Model):
         action['context'] = ctx
         action_type = self._context.get('action_type')
         if action_type == 'reversal':
-            action['domain'] = [('type','=','out_invoice'),('x_reason_rev','!=',False)]
+            action['domain'] = [('type','=','out_invoice'),('x_reason_rev','!=',False),('invoice_line_ids.is_reversal','=',False),('state','!=','cancel')]
         elif action_type == 'depreciation':
-            action['domain'] = [('type','=','out_invoice'),('x_reason_dep','!=',False)]
+            action['domain'] = [('type','=','out_invoice'),('x_reason_dep','!=',False),('invoice_line_ids.is_depreciation','=',False),('state','!=','cancel')]
         elif action_type == 'reversed_invoice':
-            action['domain'] = [('invoice_line_ids.is_reversal','=',True)]
+            action['domain'] = [('invoice_line_ids.is_reversal','=',True),('state','!=','cancel')]
         elif action_type == 'full_depreciation':
-            action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','<',1)]
+            action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','<',1),('state','!=','cancel')]
         elif action_type == 'partial_depreciation':
-            action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0)]
+            action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0),('state','!=','cancel')]
         elif action_type == 'isr_invoice':
             action['domain'] = [('x_invoice_id','=',False)]
 
