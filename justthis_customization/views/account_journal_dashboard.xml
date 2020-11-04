@@ -29,31 +29,66 @@
                 <field name="is_isr_journal" />
             </xpath>
             <xpath expr="//t[@t-name='JournalBodySalePurchase']/div[hasclass('o_kanban_primary_right')]" position="inside">
-                <div class="row">
-                    <div class="col-7" t-if="journal_type == 'sale'">
+
+                <div class="row" t-if="journal_type == 'sale'">
+                    <div class="col-7">
                         <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'reversal'}">
                             <span title="Reversal Invoice"><t t-esc="dashboard.reversal_count"/> Reversal Invoice</span>
                         </a>
+                    </div>
+                    <div class="col-5 text-right">
+                        <span><t t-esc="dashboard.reversal_count_sum"/></span>
+                    </div>
+                </div>
+
+                <div class="row" t-if="journal_type == 'sale'">
+                    <div class="col-7">
                         <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'depreciation'}">
                             <span title="Depreciation Invoice"><t t-esc="dashboard.depreciation_count"/> Depreciation Invoice</span>
                         </a>
+                    </div>
+                    <div class="col-5 text-right">
+                        <span><t t-esc="dashboard.depreciation_count_sum"/></span>
+                    </div>
+                </div>
+                <div class="row" t-if="journal_type == 'sale'">
+                    <div class="col-7">
                         <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'reversed_invoice'}">
-                            <span title="Depreciation Invoice"><t t-esc="dashboard.reversed_invoice_count"/> Reversed Invoice</span>
-                        </a>
-                        <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'full_depreciation'}">
-                            <span title="Depreciation Invoice"><t t-esc="dashboard.fully_invoice_count"/> Fully Depreciated Invoice</span>
-                        </a>
-                        <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'partial_depreciation'}">
-                            <span title="Depreciation Invoice"><t t-esc="dashboard.partial_invoice_count"/> Partial Depreciated Invoice</span>
+                            <span title="Reversed Invoice"><t t-esc="dashboard.reversed_invoice_count"/> Reversed Invoice</span>
                         </a>
                     </div>
-                </div>               
+                    <div class="col-5 text-right">
+                        <span><t t-esc="dashboard.reversed_invoice_count_sum"/></span>
+                    </div>
+                </div>
+
+                <div class="row" t-if="journal_type == 'sale'">
+                    <div class="col-7">
+                        <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'full_depreciation'}">
+                            <span title="Fully Depreciated Invoice"><t t-esc="dashboard.fully_invoice_count"/> Fully Depreciated Invoice</span>
+                        </a>
+                    </div>
+                    <div class="col-5 text-right">
+                        <span><t t-esc="dashboard.fully_invoice_count_sum"/></span>
+                    </div>
+                </div>
+                <div class="row" t-if="journal_type == 'sale'">
+                    <div class="col-7">
+                        <a type="object" name="open_action_justthis" context="{'action_name': 'account.action_invoice_tree1','action_type':'partial_depreciation'}">
+                            <span title="Partial Depreciated Invoice"><t t-esc="dashboard.partial_invoice_count"/> Partial Depreciated Invoice</span>
+                        </a>
+                    </div>
+                    <div class="col-5 text-right">
+                        <span><t t-esc="dashboard.partial_invoice_count_sum"/></span>
+                    </div>
+                </div>
             </xpath>
+
             <xpath expr="//t[@t-name='JournalBodyBankCash']/div[hasclass('o_kanban_primary_right')]" position="inside">
                 <div class="row">
                     <div class="col-7" t-if="record.is_isr_journal.raw_value">
                         <a type="object" name="open_action_justthis" context="{'action_name': '__import__.x_id_isr_payments','action_type':'isr_invoice'}">
-                            <span title="ISR Invoice"><t t-esc="dashboard.isr_record_count"/> ISR Records</span>
+                            <span title="ISR Records"><t t-esc="dashboard.isr_record_count"/> ISR Records</span>
                         </a>
                     </div>
                 </div>

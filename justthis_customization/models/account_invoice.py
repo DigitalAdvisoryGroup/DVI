@@ -4,6 +4,7 @@
 
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError
+from odoo.tools.misc import formatLang
 
 
 class AccountInvoice(models.Model):
@@ -90,14 +91,32 @@ class account_journal(models.Model):
     
     @api.multi
     def get_journal_dashboard_datas(self):
+        reversal_count = self.env['account.invoice'].search([('x_reason_rev','!=',False)])
+        depreciation_count = self.env['account.invoice'].search([('x_reason_dep','!=',False)])
+        reversed_invoice_count = self.env['account.invoice'].search([('invoice_line_ids.is_reversal','=',True)])
+        fully_invoice_count = self.env['account.invoice'].search([('invoice_line_ids.is_depreciation','=',True),('residual','<',1)])
+        partial_invoice_count = self.env['account.invoice'].search([('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0)])
+        isr_record_count = self.env['inbound_isr_msg'].search([('x_invoice_id','=',False)])
+        currency = self.currency_id or self.company_id.currency_id
+        reversal_count_sum = formatLang(self.env, currency.round(sum(reversal_count.mapped('amount_total'))) + 0.0, currency_obj=currency)
+        depreciation_count_sum = formatLang(self.env, currency.round(sum(depreciation_count.mapped('amount_total'))) + 0.0, currency_obj=currency)
+        reversed_invoice_count_sum = formatLang(self.env, currency.round(sum(reversed_invoice_count.mapped('amount_total'))) + 0.0, currency_obj=currency) 
+        fully_invoice_count_sum = formatLang(self.env, currency.round(sum(fully_invoice_count.mapped('amount_total'))) + 0.0, currency_obj=currency) 
+        partial_invoice_count_sum = formatLang(self.env, currency.round(sum(partial_invoice_count.mapped('amount_total'))) + 0.0, currency_obj=currency) 
         data = dict(
             super(account_journal, self).get_journal_dashboard_datas(),
-            reversal_count=self.env['account.invoice'].search_count([('x_reason_rev','!=',False)]),
-            depreciation_count=self.env['account.invoice'].search_count([('x_reason_dep','!=',False)]),
-            reversed_invoice_count=self.env['account.invoice'].search_count([('invoice_line_ids.is_reversal','=',True)]),
-            fully_invoice_count=self.env['account.invoice'].search_count([('invoice_line_ids.is_depreciation','=',True),('residual','<',1)]),
-            partial_invoice_count=self.env['account.invoice'].search_count([('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0)]),
-            isr_record_count=self.env['inbound_isr_msg'].search_count([('x_invoice_id','=',False)])
+            reversal_count=len(reversal_count),
+            depreciation_count=len(depreciation_count),
+            reversed_invoice_count=len(reversed_invoice_count),
+            fully_invoice_count=len(fully_invoice_count),
+            partial_invoice_count=len(partial_invoice_count),
+            isr_record_count=len(isr_record_count),
+            reversal_count_sum=reversal_count_sum,
+            depreciation_count_sum=depreciation_count_sum,
+            reversed_invoice_count_sum=reversed_invoice_count_sum,
+            fully_invoice_count_sum=fully_invoice_count_sum,
+            partial_invoice_count_sum=partial_invoice_count_sum,
+
         )
         return data
 
@@ -125,3 +144,26 @@ class account_journal(models.Model):
             action['domain'] = [('x_invoice_id','=',False)]
 
         return action
+
+
+class AccountPayment(models.Model):
+    _inherit = 'account.payment'
+
+
+    def post(self):
+        res = super(AccountPayment,self).post()
+        move_data = {
+            'x_jt_crt_uname':self.x_jt_crt_uname,
+            'x_jt_crt_uid':self.x_jt_crt_uid,
+            'x_jt_upd_uname':self.x_jt_upd_uname,
+            'x_jt_upd_uid':self.x_jt_upd_uid,
+            'x_acc_template_id':self.x_acc_template_id,
+            'x_acc_upd_template_id':self.x_acc_upd_template_id,
+            'x_jt_activity_id':self.x_jt_activity_id,
+            'x_jt_main1_id':self.x_jt_main1_id,
+            'x_jt_main2_id':self.x_jt_main2_id,
+            'x_jt_deposit_id':self.x_jt_deposit_id,
+        }
+        for move in self.move_line_ids:
+            move.write(move_data)
+        return res

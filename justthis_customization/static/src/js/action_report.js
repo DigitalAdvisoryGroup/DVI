@@ -118,6 +118,47 @@ odoo.define('justthis_customization.ActionManager', function (require) {
             return data
             }
     });
+
+    var FormRenderer = require("web.FormRenderer");
+    var dialogs = require('web.view_dialogs');
+    var core = require('web.core');
+    var Dialog = require('web.Dialog');
+    var _t = core._t;
+
+    FormRenderer.include({
+        _renderTagButton: function (node) {
+            var $button = this._super.apply(this, arguments);
+            var self = this;
+            var value = this.state.res_id;
+            if(node.attrs.class == 'oe_inline set-invoice'){
+                $button.click(function(){
+                    new dialogs.SelectCreateDialog(self, {
+                        res_model: 'account.invoice',
+                        title: _t('Select a invoice'),
+                        disable_multiple_selection: true,
+                        domain: [['type', '=', 'out_invoice']],
+                        on_selected: function (records) {
+                            if(records && records.length ==1){
+                                Dialog.confirm(self, (_t("Are you sure you want to set this invoice?")), {
+                                    confirm_callback: function () {
+                                        self._rpc({
+                                            model: 'inbound_isr_msg',
+                                            method: 'set_invoice',
+                                            args: [[value],records[0].id],
+                                        })
+                                        .then(function (views) {
+                                            self.__parentedParent.reload()
+                                        });
+                                    },
+                                });
+                            }
+                        }
+                    }).open();
+                })
+            }
+            return $button;
+        }
+    })
     
 });
     

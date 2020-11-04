@@ -100,6 +100,24 @@ class InboundElbaMsg(models.Model):
 class InboundIsrMsg(models.Model):
     _name = "inbound_isr_msg"
 
+    def set_invoice(self,x_invoice_id):
+        self.write({'x_invoice_id':x_invoice_id})
+        if self.x_invoice_id:
+            self.x_payment_id.cancel()
+            self.x_payment_id.action_draft()
+            self.x_payment_id.write({'partner_id':self.x_invoice_id.partner_id.id})
+            self.x_payment_id.post()
+            for line in self.x_payment_id.move_line_ids:
+                if line.account_id.id == self.x_invoice_id.account_id.id:
+                    self.x_invoice_id.assign_outstanding_credit(line.id)
+        else:
+            raise UserError(_("Please set invoice record."))
+
+
+
+
+
+
 
 
 

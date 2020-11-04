@@ -87,6 +87,58 @@ class AccountInvoiceDepreciation(models.TransientModel):
             active_id = context.get('active_id', False)
             if active_id:
                 inv = self.env['account.invoice'].browse(active_id)
+                invoice_dict = {
+                    'x_jt_crt_uname':inv.x_jt_crt_uname,
+                    'x_jt_crt_uid':inv.x_jt_crt_uid,
+                    'x_jt_upd_uname':inv.x_jt_upd_uname,
+                    'x_jt_upd_uid':inv.x_jt_upd_uid,
+                    'x_acc_template_id':inv.x_acc_template_id,
+                    'x_acc_upd_template_id':inv.x_acc_upd_template_id,
+                    'x_jt_activity_id':inv.x_jt_activity_id,
+                    'x_jt_main1_id':inv.x_jt_main1_id,
+                    'x_jt_main2_id':inv.x_jt_main2_id,
+                    'x_jt_deposit_id':inv.x_jt_deposit_id,
+                    'x_reason_rev':inv.x_reason_rev.id,
+                    'x_comment_rev':inv.x_comment_rev,
+                    'x_user_rev':inv.x_user_rev,
+                    'x_reason_dep':inv.x_reason_dep.id,
+                    'x_amount_dep':inv.x_amount_dep,
+                    'x_comment_dep':inv.x_comment_dep,
+                    'x_user_dep':inv.x_user_dep,
+                }
+                # invoice_data_dict = {
+                #     'x_jt_crt_uname':inv.x_jt_crt_uname,
+                #     'x_jt_crt_uid':inv.x_jt_crt_uid,
+                #     'x_jt_upd_uname':inv.x_jt_upd_uname,
+                #     'x_jt_upd_uid':inv.x_jt_upd_uid,
+                #     'x_acc_template_id':inv.x_acc_template_id,
+                #     'x_acc_upd_template_id':inv.x_acc_upd_template_id,
+                #     'x_jt_activity_id':inv.x_jt_activity_id,
+                #     'x_jt_main1_id':inv.x_jt_main1_id,
+                #     'x_jt_main2_id':inv.x_jt_main2_id,
+                #     'x_jt_deposit_id':inv.x_jt_deposit_id,
+                #     'x_jt_elba_reference':inv.x_jt_elba_reference,
+                #     'x_elba_receipt_id':inv.x_elba_receipt_id,
+                #     'x_elba_transfer_session_id':inv.x_elba_transfer_session_id,
+                #     'x_elba_transfer_session_date':inv.x_elba_transfer_session_date,
+                #     'x_reason_rev':inv.x_reason_rev,
+                #     'x_comment_rev':inv.x_comment_rev,
+                #     'x_user_rev':inv.x_user_rev,
+                #     'x_reason_dep':inv.x_reason_dep,
+                #     'x_amount_dep':inv.x_amount_dep,
+                #     'x_comment_dep':inv.x_comment_dep,
+                #     'x_user_dep':inv.x_user_dep,
+                #     'x_blart':inv.x_blart,
+                #     'x_belnr':inv.x_belnr,
+                #     'x_budat':inv.x_budat,
+                #     'x_sgtxt':inv.x_sgtxt,
+                #     'x_hkont':inv.x_hkont,
+                #     'x_zz_jt_ukon':inv.x_zz_jt_ukon,
+                #     'x_zz_jt_refn':inv.x_zz_jt_refn,
+                #     'x_zz_zuweis':inv.x_zz_zuweis,
+                #     'x_xblnr':inv.x_xblnr,
+                #     'x_stblg':inv.x_stblg,
+                # }
                 if inv.x_amount_dep > inv.amount_total:
                     raise UserError(_(
                         'Cannot create depreciation note for amount is higher than invoice.'))
@@ -111,38 +163,22 @@ class AccountInvoiceDepreciation(models.TransientModel):
                         line.remove_move_reconcile()
                 refund.action_invoice_open()
                 for tmpline in refund.move_id.line_ids:
-                    tmpline.write({
-                                  'x_reason_dep': inv.x_reason_dep and inv.x_reason_dep.id,
-                                  'x_comment_dep': inv.x_comment_dep,
-                                  'x_user_dep': inv.x_user_dep,
-                                  'x_amount_dep': inv.x_amount_dep,
-                                  'is_depreciate_line': True,
-                                      })
+                    invoice_move_dict = invoice_dict.copy()
+                    print(invoice_move_dict)
+                    invoice_move_dict.update({'is_depreciate_line': True})
+                    tmpline.write(invoice_move_dict)
                     if tmpline.account_id.id == inv.account_id.id:
                         to_reconcile_lines += tmpline
                 to_reconcile_lines.filtered(
                     lambda l: l.reconciled == False).reconcile()
-                res_justthis_vals = {
-                    "x_jt_crt_uname": inv.x_jt_crt_uname,
-                    "x_jt_crt_uid": inv.x_jt_crt_uid,
-                    "x_jt_upd_uname": inv.x_jt_upd_uname,
-                    "x_jt_upd_uid": inv.x_jt_upd_uid,
-                    "x_acc_template_id": inv.x_acc_template_id,
-                    "x_acc_upd_template_id": inv.x_acc_upd_template_id,
-                    "x_jt_activity_id": inv.x_jt_activity_id,
-                    "x_jt_main1_id": inv.x_jt_main1_id,
-                    "x_jt_main2_id": inv.x_jt_main2_id,
-                    "x_orig_isr_number": inv.x_orig_isr_number,
-
-                }
-                refund.write(res_justthis_vals)
+                refund.write(invoice_dict)
                 x_jt_dep_status = "dep"
                 if inv.x_amount_dep < inv.amount_total:
                     x_jt_dep_status = "dep_part"
                 refund.x_jt_dep_status = x_jt_dep_status
                 inv.x_jt_dep_status = x_jt_dep_status
                 if refund.move_id:
-                    refund.move_id.write(res_justthis_vals)
+                    refund.move_id.write(invoice_dict)
                 result = self.env.ref('account.action_invoice_out_refund').read()[0]
                 invoice_domain = safe_eval(result['domain'])
                 invoice_domain.append(('id', 'in', created_inv))
