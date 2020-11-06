@@ -19,14 +19,12 @@ odoo.define('justthis_customization.ActionManager', function (require) {
 
         _onChangeExternal:function(event){
             var vdb_balance = $(event.target).closest('tr').find('.vdb-balance').find('span').text();
-            var input = $(event.target).val();
+            var input = parseFloat($(event.target).val());
             var balance = vdb_balance.replace("CHF","").replace(",","");
             var balance = parseFloat(balance.replace(",",""))
-            if(input > 0){
-                var total = balance-input;
-                var total = total.toFixed(2);
-                $(event.target).closest('tr').find('.total-balance').find('input').val(total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")+" CHF");
-            }
+            var total = balance-input;
+            var total = total.toFixed(2);
+            $(event.target).closest('tr').find('.total-balance').find('input').val(total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")+" CHF");
         }
     })
     
