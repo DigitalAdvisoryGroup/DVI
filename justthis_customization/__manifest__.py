@@ -27,7 +27,7 @@ Description
     'author': "Digital Advisory Group GmbH, Candidroot Solutions Pvt. Ltd.",
     'website': "https://www.digitaladvisorygroup.io/",
     'category': 'Localization',
-    'depends': ['l10n_ch_reports','account_reports','account','base'],
+    'depends': ['l10n_ch_reports','account_reports','account_cancel','base'],
     'data': [
             "security/ir.model.access.csv",
             "views/asset_templates.xml",
@@ -51,5 +51,6 @@ Description
     ],
     'installable': True,
     'auto_install': False,
-    'application': False
+    'application': False,
+    'post_init_hook': '_set_journals_cancel',
 }

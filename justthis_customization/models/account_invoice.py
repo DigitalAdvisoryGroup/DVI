@@ -5,10 +5,33 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
+import json
 
 
 class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
+
+    def set_open_invoice_due_date(self, date=False):
+        if date and self and self.state in ("open","paid"):
+            payment_ids = []
+            payment_vals = json.loads(self.payments_widget) and json.loads(self.payments_widget).get("content") or False
+            if payment_vals:
+                for payment in payment_vals:
+                    payment_ids.append(payment.get('account_payment_id'))
+            self.action_invoice_cancel()
+            self.action_invoice_draft()
+            self.date_due = date
+            self.action_invoice_open()
+            if payment_ids:
+                payments = self.env['account.payment'].browse(payment_ids)
+                move_lines = payments.mapped('move_line_ids').filtered(
+                    lambda line: not line.reconciled and line.credit > 0.0)
+                for line in move_lines:
+                    self.assign_outstanding_credit(line.id)
+            return {"invoice_id" : self.id}
+        return False
+
+
 
     def display_swiss_qr_code(self):
         self.ensure_one()
@@ -51,6 +74,34 @@ class AccountInvoice(models.Model):
         return res
 
     @api.multi
+    def invoice_validate(self):
+        res = super(AccountInvoice, self).invoice_validate()
+        for inv in self:
+            if inv.move_id and inv.move_id.line_ids:
+                invoice_dict = {
+                    'x_jt_crt_uname': inv.x_jt_crt_uname,
+                    'x_jt_crt_uid': inv.x_jt_crt_uid,
+                    'x_jt_upd_uname': inv.x_jt_upd_uname,
+                    'x_jt_upd_uid': inv.x_jt_upd_uid,
+                    'x_acc_template_id': inv.x_acc_template_id,
+                    'x_acc_upd_template_id': inv.x_acc_upd_template_id,
+                    'x_jt_activity_id': inv.x_jt_activity_id,
+                    'x_jt_main1_id': inv.x_jt_main1_id,
+                    'x_jt_main2_id': inv.x_jt_main2_id,
+                    'x_jt_deposit_id': inv.x_jt_deposit_id,
+                    'x_reason_rev': inv.x_reason_rev.id,
+                    'x_comment_rev': inv.x_comment_rev,
+                    'x_user_rev': inv.x_user_rev,
+                    'x_reason_dep': inv.x_reason_dep.id,
+                    'x_amount_dep': inv.x_amount_dep,
+                    'x_comment_dep': inv.x_comment_dep,
+                    'x_user_dep': inv.x_user_dep,
+                }
+                inv.move_id.write(invoice_dict)
+                inv.move_id.line_ids.write(invoice_dict)
+        return res
+
+    @api.multi
     @api.returns('self')
     def refund_dep(self, date_invoice=None, date=None, description=None,
                journal_id=None, dep_product_id=False,dep_amount=0.0,account_analytic_id=False):
@@ -87,6 +138,8 @@ class account_journal(models.Model):
     _inherit = "account.journal"
 
     is_isr_journal = fields.Boolean("Is ISR Journal?")
+    update_posted = fields.Boolean(string='Allow Cancelling Entries',default=True,
+                                   help="Check this box if you want to allow the cancellation the entries related to this journal or of the invoice related to this journal")
 
     
     @api.multi
