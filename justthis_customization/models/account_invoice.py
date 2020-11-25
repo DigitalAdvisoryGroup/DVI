@@ -11,40 +11,27 @@ import json
 class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
 
-    def add_open_invoice_lines(self, product_id=False):
-        self.ensure_one()
-        if product_id and self and self.state in ("open", "paid"):
+    def add_open_invoice_lines(self, data=False):
+        if data and data.get("invoice_id"):
+            inv = self.browse(data['invoice_id'])
             payment_ids = []
-            payment_vals = json.loads(self.payments_widget) and json.loads(
-                self.payments_widget).get("content") or False
+            payment_vals = json.loads(inv.payments_widget) and json.loads(
+                inv.payments_widget).get("content") or False
             if payment_vals:
                 for payment in payment_vals:
-                    payment_ids.append(payment.get('account_payment_id'))
-            self.action_invoice_cancel()
-            self.action_invoice_draft()
-            self.refresh()
-            product_id = self.env["product.product"].browse(int(product_id))
-            if product_id:
-                line_values = {
-                    'product_id': product_id.id,
-                    'price_unit': product_id.lst_price,
-                    'invoice_id': self.id,
-                }
-                invoice_line = self.env['account.invoice.line'].new(
-                    line_values)
-                invoice_line._onchange_product_id()
-                line_values = invoice_line._convert_to_write(
-                    {name: invoice_line[name] for name in invoice_line._cache})
-                line_values['price_unit'] = product_id.lst_price
-                self.env['account.invoice.line'].create(line_values)
-            self.action_invoice_open()
+                    payment_ids.append(payment.get('payment_id'))
+            inv.action_invoice_cancel()
+            inv.action_invoice_draft()
+            inv.refresh()
+            self.env['account.invoice.line'].create(data)
+            inv.action_invoice_open()
             if payment_ids:
-                payments = self.env['account.payment'].browse(payment_ids)
-                move_lines = payments.mapped('move_line_ids').filtered(
-                    lambda line: not line.reconciled and line.credit > 0.0)
-                for line in move_lines:
-                    self.assign_outstanding_credit(line.id)
-            return {"invoice_id" : self.id}
+                # payments = self.env['account.payment'].browse(payment_ids)
+                # move_lines = payments.mapped('move_line_ids').filtered(
+                #     lambda line: not line.reconciled and line.credit > 0.0)
+                for line in payment_ids:
+                    inv.assign_outstanding_credit(line)
+            return {"invoice_id" : inv.id}
 
 
     def set_open_invoice_due_date(self, date=False):
