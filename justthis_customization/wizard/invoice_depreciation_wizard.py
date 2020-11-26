@@ -41,6 +41,24 @@ class AccountInvoiceDepreciation(models.TransientModel):
         return ''
 
     @api.model
+    def _get_inv_dep_amount(self):
+        context = dict(self._context or {})
+        active_id = context.get('active_id', False)
+        if active_id:
+            inv = self.env['account.invoice'].browse(active_id)
+            return inv.x_amount_dep or 0
+        return 0
+
+    @api.model
+    def _get_inv_currency(self):
+        context = dict(self._context or {})
+        active_id = context.get('active_id', False)
+        if active_id:
+            inv = self.env['account.invoice'].browse(active_id)
+            return inv.currency_id.id or False
+        return False
+
+    @api.model
     def _get_deault_account_id(self):
         context = dict(self._context or {})
         active_id = context.get('active_id', False)
@@ -64,9 +82,10 @@ class AccountInvoiceDepreciation(models.TransientModel):
     description = fields.Char(string='Reason', required=True,default=_get_reason)
     inv_comment = fields.Char(string='Comment', required=True,default=_get_inv_comment)
     inv_user = fields.Char(string='User', required=True,default=_get_inv_user)
+    dep_amount = fields.Monetary(string='Depreciation Amount',default=_get_inv_dep_amount)
     depreciation_account_id = fields.Many2one("account.account",'Depreciation Account', required=True,default=_get_deault_account_id)
     analytic_account_id = fields.Many2one("account.analytic.account",'Analytic Account', required=True,default=_get_deault_analytic_id)
-
+    currency_id = fields.Many2one('res.currency',default=_get_inv_currency,readonly=True)
 
     def _get_depreciation_refund(self, inv,analytic_account_id):
         self.ensure_one()
