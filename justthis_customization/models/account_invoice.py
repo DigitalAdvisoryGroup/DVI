@@ -40,16 +40,16 @@ class AccountInvoice(models.Model):
             payment_vals = json.loads(self.payments_widget) and json.loads(self.payments_widget).get("content") or False
             if payment_vals:
                 for payment in payment_vals:
-                    payment_ids.append(payment.get('account_payment_id'))
+                    payment_ids.append(payment.get('payment_id'))
             self.action_invoice_cancel()
             self.action_invoice_draft()
             self.date_due = date
             self.action_invoice_open()
             if payment_ids:
-                payments = self.env['account.payment'].browse(payment_ids)
-                move_lines = payments.mapped('move_line_ids').filtered(
-                    lambda line: not line.reconciled and line.credit > 0.0)
-                for line in move_lines:
+                # payments = self.env['account.payment'].browse(payment_ids)
+                # move_lines = payments.mapped('move_line_ids').filtered(
+                #     lambda line: not line.reconciled and line.credit > 0.0)
+                for line in payment_ids:
                     self.assign_outstanding_credit(line.id)
             return {"invoice_id" : self.id}
         return False

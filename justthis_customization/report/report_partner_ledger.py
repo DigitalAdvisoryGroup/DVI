@@ -10,38 +10,93 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
 
     def _lines(self, data, partner):
         full_account = []
-        currency = self.env['res.currency']
-        query_get_data = self.env['account.move.line'].with_context(data['form'].get('used_context', {}))._query_get()
-        reconcile_clause = "" if data['form']['reconciled'] else ' AND "account_move_line".full_reconcile_id IS NULL '
-        params = [partner.id, tuple(data['computed']['move_state']), tuple(data['computed']['account_ids'])] + query_get_data[2]
-        query = """
-            SELECT "account_move_line".id, "account_move_line".date,"account_move_line".x_jt_main1_id,"account_move_line".x_jt_main2_id,"account_move_line".x_jt_deposit_id, j.code, acc.code as a_code, acc.name as a_name, "account_move_line".ref, m.name as move_name, "account_move_line".name, "account_move_line".debit, "account_move_line".credit, "account_move_line".amount_currency,"account_move_line".currency_id, c.symbol AS currency_code
-            FROM """ + query_get_data[0] + """
-            LEFT JOIN account_journal j ON ("account_move_line".journal_id = j.id)
-            LEFT JOIN account_account acc ON ("account_move_line".account_id = acc.id)
-            LEFT JOIN res_currency c ON ("account_move_line".currency_id=c.id)
-            LEFT JOIN account_move m ON (m.id="account_move_line".move_id)
-            WHERE "account_move_line".partner_id = %s
-                AND m.state IN %s
-                AND "account_move_line".account_id IN %s AND """ + query_get_data[1] + reconcile_clause + """
-                ORDER BY "account_move_line".date"""
-        self.env.cr.execute(query, tuple(params))
-        res = self.env.cr.dictfetchall()
-        sum = 0.0
-        lang_code = self.env.context.get('lang') or 'en_US'
-        lang = self.env['res.lang']
-        lang_id = lang._lang_get(lang_code)
-        date_format = lang_id.date_format
-        for r in res:
-            r['date'] = r['date']
-            r['displayed_name'] = '-'.join(
-                r[field_name] for field_name in ('move_name', 'ref', 'name')
-                if r[field_name] not in (None, '', '/')
-            )
-            sum += r['debit'] - r['credit']
-            r['progress'] = sum
-            r['currency_id'] = currency.browse(r.get('currency_id'))
-            full_account.append(r)
+        invoice_ids = self.env['account.invoice'].search([('date_invoice','>=',data['form']['date_from']),
+                                                          ('date_invoice', '<=',data['form']['date_to']),
+                                                          ('state','in',('open','paid')),
+                                                          ('journal_id','in',data['form']['journal_ids']),
+                                                          ('partner_id','=',partner.id),
+                                                          ('company_id','=',data['form']['company_id'][0])
+                                                          ])
+        for inv in invoice_ids:
+            inv_vals = {
+                "id":inv.id,
+                "date":inv.date_invoice,
+                "x_jt_main1_id":inv.x_jt_main1_id,
+                "x_jt_main2_id":inv.x_jt_main2_id,
+                "x_jt_deposit_id":inv.x_jt_deposit_id,
+                "code":inv.journal_id.code,
+                "a_code":inv.account_id.code,
+                "a_name":inv.account_id.name,
+                "ref":inv.reference,
+                "move_name":inv.move_id.name,
+                "name":inv.name,
+                "state": inv.state,
+                "debit":inv.amount_total,
+                "credit":inv.amount_total - inv.residual,
+                "balance": inv.residual,
+                "amount_currency":0.0,
+                "currency_id":inv.currency_id,
+                "currency_code":False,
+                "progress": 0.0,
+                "displayed_name":'-'.join(field_name for field_name in (inv.move_id.name, inv.reference, '') if field_name not in (False,None, '', '/')),
+                "lines": []
+            }
+            inv_lines = []
+            for line in inv.invoice_line_ids:
+                inv_lines.append({
+                    "date": inv.date_invoice,
+                    "name": line.product_id.name,
+                     "x_jt_main1_id":inv.x_jt_main1_id,
+                     "x_jt_main2_id":inv.x_jt_main2_id,
+                     "x_jt_deposit_id":inv.x_jt_deposit_id,
+                     "account_name": line.account_id.name,
+                    "account_code": line.account_id.code,
+                    "analytic_account_name": line.account_analytic_id.name,
+                    "qty": line.quantity,
+                    "amount": line.price_total,
+                    "is_reversal": line.is_reversal,
+                    "is_depreciate": line.is_depreciation
+                })
+            inv_vals['lines'] = inv_lines
+            full_account.append(inv_vals)
+        # print("------full_account--------------",full_account)
+
+        # stop
+        # currency = self.env['res.currency']
+        # query_get_data = self.env['account.move.line'].with_context(data['form'].get('used_context', {}))._query_get()
+        # reconcile_clause = "" if data['form']['reconciled'] else ' AND "account_move_line".full_reconcile_id IS NULL '
+        # params = [partner.id, tuple(data['computed']['move_state']), tuple(data['computed']['account_ids'])] + query_get_data[2]
+        # print("-------query_get_data---------",query_get_data)
+        # print("-------reconcile_clause---------",reconcile_clause)
+        # print("-------params---------",params)
+        # query = """
+        #     SELECT "account_move_line".id, "account_move_line".date,"account_move_line".x_jt_main1_id,"account_move_line".x_jt_main2_id,"account_move_line".x_jt_deposit_id, j.code, acc.code as a_code, acc.name as a_name, "account_move_line".ref, m.name as move_name, "account_move_line".name, "account_move_line".debit, "account_move_line".credit, "account_move_line".amount_currency,"account_move_line".currency_id, c.symbol AS currency_code
+        #     FROM """ + query_get_data[0] + """
+        #     LEFT JOIN account_journal j ON ("account_move_line".journal_id = j.id)
+        #     LEFT JOIN account_account acc ON ("account_move_line".account_id = acc.id)
+        #     LEFT JOIN res_currency c ON ("account_move_line".currency_id=c.id)
+        #     LEFT JOIN account_move m ON (m.id="account_move_line".move_id)
+        #     WHERE "account_move_line".partner_id = %s
+        #         AND m.state IN %s
+        #         AND "account_move_line".account_id IN %s AND """ + query_get_data[1] + reconcile_clause + """
+        #         ORDER BY "account_move_line".date"""
+        # self.env.cr.execute(query, tuple(params))
+        # res = self.env.cr.dictfetchall()
+        # sum = 0.0
+        # lang_code = self.env.context.get('lang') or 'en_US'
+        # lang = self.env['res.lang']
+        # lang_id = lang._lang_get(lang_code)
+        # date_format = lang_id.date_format
+        # for r in res:
+        #     r['date'] = r['date']
+        #     r['displayed_name'] = '-'.join(
+        #         r[field_name] for field_name in ('move_name', 'ref', 'name')
+        #         if r[field_name] not in (None, '', '/')
+        #     )
+        #     sum += r['debit'] - r['credit']
+        #     r['progress'] = sum
+        #     r['currency_id'] = currency.browse(r.get('currency_id'))
+        #     full_account.append(r)
         return full_account
 
     def _sum_partner(self, data, partner, field):

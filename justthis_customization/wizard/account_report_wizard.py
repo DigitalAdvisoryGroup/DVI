@@ -7,7 +7,15 @@ class AccountFinancialReportpdf(models.TransientModel):
     _name = "account.financial.report.pdf"
     _description = "Account PDF Report"
 
-    partner_id = fields.Many2one('res.partner', 'Partner', required=True)
+    @api.model
+    def _set_partner(self):
+        context = dict(self._context or {})
+        active_id = context.get('active_id', False)
+        if active_id:
+            return active_id
+        return False
+
+    partner_id = fields.Many2one('res.partner', 'Partner', required=True, default=_set_partner)
     date_from = fields.Date('Start Date', required=True)
     date_to = fields.Date('End Date', required=True)
     company_id = fields.Many2one('res.company', string='Company', required=True,
