@@ -324,7 +324,7 @@ class ReportConfigure(models.AbstractModel):
                 for move in move_ids:
                     aml_ids = self.env['account.move.line'].search(
                         [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
-                    if aml_ids and not options['external']: continue
+                    if aml_ids: continue
                     if move.id not in final_move:
                         final_move.append(move.id)
                         final_move.sort(reverse=True)
@@ -348,9 +348,11 @@ class ReportConfigure(models.AbstractModel):
                             temp_dict[kk] = []
             for k,v in final_dict.items():
                 del temp_dict[k]
+            
             res = self.parse_sap_move_lines(self.merge_final_dict_lines(temp_dict),self.merge_final_dict_lines(final_dict), self.env.user.company_id, f)
 
     def merge_final_dict_lines(self, final_dict):
+        new_final_dict = {}
         for k,v in final_dict.items():
             dd = {}
             for d in v:
@@ -362,7 +364,39 @@ class ReportConfigure(models.AbstractModel):
                     dd[d['account_code']] = d
 
             final_dict[k] = list(dd.values())
-        return final_dict
+        
+        newfinal_dict = final_dict.copy()
+        removed_data = []
+        for k,v in final_dict.items():
+            lenmatch = v.copy()
+            dd_value = v.copy()
+            account_code = [(x['account_code'], x['analytic_account_id'].id) for x in v]
+            for s,d in newfinal_dict.items():
+                account_code2 = [(x['account_code'], x['analytic_account_id'].id) for x in d]
+                if k.id != s.id and len(d) == len(v) and account_code2 == account_code:
+                    removed_data.append(s.id)
+                    lenmatch.extend(d)
+            if lenmatch:
+                dd = {}
+                for ss in lenmatch:
+                    if ss['account_code'] in dd:
+                        dd[ss['account_code']]['credit'] += ss['credit']
+                        dd[ss['account_code']]['debit'] += ss['debit']
+                        dd[ss['account_code']]['id'] = str(dd[ss['account_code']]['id'])+'-'+str(ss['id'])
+                    else:
+                        dd[ss['account_code']] = ss
+                dd_value = list(dd.values())
+            if k.id not in removed_data:
+                print(dd_value)
+                total_line = len(dd_value)
+                line_count = 0
+                for sds in dd_value:
+                    if sds['credit'] == sds['debit']:
+                        line_count +=1
+                if line_count != total_line:
+                    new_final_dict[k] = dd_value
+                
+        return new_final_dict
 
     def parse_sap_move_lines(self, temp_dict, final_dict, company, f):
         total_debit_credit_amt = 0.0
@@ -410,7 +444,7 @@ class ReportConfigure(models.AbstractModel):
                     position += ''.ljust(4, ' ')
                     position += ''.ljust(16, ' ')
                     position += ''.ljust(8, ' ')
-                    position += cost_center_code.ljust(10, ' ')
+                    position += ''.ljust(10, ' ')
                     position += profit_center_code.ljust(12, ' ')
                     position += line['account_code'].ljust(10, ' ')
                     position += str(amount).ljust(16, ' ')
@@ -466,7 +500,7 @@ class ReportConfigure(models.AbstractModel):
                     position += ''.ljust(4, ' ')
                     position += ''.ljust(16, ' ')
                     position += ''.ljust(8, ' ')
-                    position += cost_center_code.ljust(10, ' ')
+                    position += ''.ljust(10, ' ')
                     position += profit_center_code.ljust(12, ' ')
                     position += line['account_code'].ljust(10, ' ')
                     position += str(amount).ljust(16, ' ')
