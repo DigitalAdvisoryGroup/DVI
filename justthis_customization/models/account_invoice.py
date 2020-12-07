@@ -43,6 +43,7 @@ class AccountInvoice(models.Model):
                     payment_ids.append(payment.get('payment_id'))
             self.action_invoice_cancel()
             self.action_invoice_draft()
+            self.refresh()
             self.date_due = date
             self.action_invoice_open()
             if payment_ids:
@@ -50,7 +51,7 @@ class AccountInvoice(models.Model):
                 # move_lines = payments.mapped('move_line_ids').filtered(
                 #     lambda line: not line.reconciled and line.credit > 0.0)
                 for line in payment_ids:
-                    self.assign_outstanding_credit(line.id)
+                    self.assign_outstanding_credit(line)
             return {"invoice_id" : self.id}
         return False
 
