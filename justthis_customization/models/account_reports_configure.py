@@ -314,202 +314,134 @@ class ReportConfigure(models.AbstractModel):
         if report_id:
             date_from = options.get("date").get("date_from")
             date_to = options.get("date").get("date_to")
-            final_move = []
+            final_data = []
+            account_ids = self.env['account.account']
             for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
-                domain = [('date', '>=', date_from), ('date', '<=', date_to),
-                          ('line_ids.account_id', '=', account_id.id)]
-                move_ids = self.env['account.move'].search(domain)
-                for move in move_ids:
+                analytic_account_ids = self.env['account.analytic.account'].search([])
+                analytic_dict = {}
+                for analytic in analytic_account_ids:
+                    analytic_dict[analytic] = []
                     aml_ids = self.env['account.move.line'].search(
-                        [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
-                    if aml_ids: continue
-                    if move.id not in final_move:
-                        final_move.append(move.id)
-                        final_move.sort(reverse=True)
-            final_move = self.env['account.move'].browse(final_move)
-            temp_dict = {}
-            final_dict = {}
-            for mv in final_move:
-                temp_dict.update({mv: []})
-                for aml in mv.line_ids:
-                    temp_dict[mv].append({'id': aml.id,'account_id': aml.account_id,'account_code': aml.x_code_external or aml.account_id.x_code_external,'debit': aml.debit,
-                                             'credit': aml.credit, 'analytic_account_id': aml.analytic_account_id})
-            for k,v in temp_dict.items():
-                v_acc_id = [(x['account_id'].id, x['analytic_account_id'].id) for x in v]
-                v_acc_id.sort()
-                for kk,vv in temp_dict.items():
-                    if k != kk:
-                        vv_acc_id = [(x['account_id'].id, x['analytic_account_id'].id) for x in vv]
-                        vv_acc_id.sort()
-                        if vv_acc_id and v_acc_id and vv_acc_id == v_acc_id:
-                            final_dict.update({k: v+vv})
-                            temp_dict[kk] = []
-            for k,v in final_dict.items():
-                del temp_dict[k]
-            
-            res = self.parse_sap_move_lines(self.merge_final_dict_lines(temp_dict),self.merge_final_dict_lines(final_dict), self.env.user.company_id, f)
+                        [
+                         ('move_id.date', '>=', date_from),
+                         ('move_id.date', '<=', date_to),
+                         ('move_id.state', '=', 'posted'),
+                         ('analytic_account_id', '=',analytic.id),
+                         ('account_id', '=', account_id.id),
+                         ('account_id.x_ext_ledger_account', '=', False),
+                         '|',('debit','!=',0.0),('credit','!=',0.0)
+                        ]
 
-    def merge_final_dict_lines(self, final_dict):
-        new_final_dict = {}
-        for k,v in final_dict.items():
-            dd = {}
-            for d in v:
-                if d['account_code'] in dd:
-                    dd[d['account_code']]['credit'] += d['credit']
-                    dd[d['account_code']]['debit'] += d['debit']
-                    dd[d['account_code']]['id'] = str(dd[d['account_code']]['id'])+'-'+str(d['id'])
-                else:
-                    dd[d['account_code']] = d
+                    )
+                    amount_dict = {}
+                    for aml in  aml_ids:
+                        if aml.debit > 0.0:
+                            counter_aml_ids = aml.move_id.line_ids.filtered(
+                                lambda cml: cml.id != aml.id and cml.credit > 0.0)
+                            aml_dict = {
+                                aml.account_id:{'id':str(aml.id),'debit':aml.debit,'credit':0, 'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
+                                counter_aml_ids.account_id:{'id':str(aml.id),'debit':0,'credit':aml.debit,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
+                            }
+                        else:
+                            counter_aml_ids = aml.move_id.line_ids.filtered(
+                                lambda cml: cml.id != aml.id and cml.debit > 0.0)
+                            aml_dict = {
+                                aml.account_id: {'id':str(aml.id),'debit': 0, 'credit': aml.credit,'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
+                                counter_aml_ids.account_id: {'id':str(aml.id),'debit': aml.credit, 'credit': 0,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
+                            }
+                        if len(counter_aml_ids) == 1:
+                            account_key_pair = '-'.join([aml.account_id.code,counter_aml_ids.account_id.code])
+                            if account_key_pair in amount_dict:
+                                amount_dict[account_key_pair][aml.account_id]['debit'] +=aml_dict[aml.account_id]['debit']
+                                amount_dict[account_key_pair][aml.account_id]['credit'] +=aml_dict[aml.account_id]['credit']
+                                amount_dict[account_key_pair][aml.account_id]['id'] +='-'+aml_dict[aml.account_id]['id']
+                                amount_dict[account_key_pair][counter_aml_ids.account_id]['debit'] +=aml_dict[counter_aml_ids.account_id]['debit']
+                                amount_dict[account_key_pair][counter_aml_ids.account_id]['credit'] +=aml_dict[counter_aml_ids.account_id]['credit']
+                                amount_dict[account_key_pair][counter_aml_ids.account_id]['id'] +='-'+aml_dict[counter_aml_ids.account_id]['id']
+                            else:
+                                amount_dict[account_key_pair] = aml_dict
 
-            final_dict[k] = list(dd.values())
-        
-        newfinal_dict = final_dict.copy()
-        removed_data = []
-        for k,v in final_dict.items():
-            lenmatch = v.copy()
-            dd_value = v.copy()
-            account_code = [(x['account_code'], x['analytic_account_id'].id) for x in v]
-            for s,d in newfinal_dict.items():
-                account_code2 = [(x['account_code'], x['analytic_account_id'].id) for x in d]
-                if k.id != s.id and len(d) == len(v) and account_code2 == account_code:
-                    removed_data.append(s.id)
-                    lenmatch.extend(d)
-            if lenmatch:
-                dd = {}
-                for ss in lenmatch:
-                    if ss['account_code'] in dd:
-                        dd[ss['account_code']]['credit'] += ss['credit']
-                        dd[ss['account_code']]['debit'] += ss['debit']
-                        dd[ss['account_code']]['id'] = str(dd[ss['account_code']]['id'])+'-'+str(ss['id'])
-                    else:
-                        dd[ss['account_code']] = ss
-                dd_value = list(dd.values())
-            if k.id not in removed_data:
-                print(dd_value)
-                total_line = len(dd_value)
-                line_count = 0
-                for sds in dd_value:
-                    if sds['credit'] == sds['debit']:
-                        line_count +=1
-                if line_count != total_line:
-                    new_final_dict[k] = dd_value
-                
-        return new_final_dict
+                if aml_ids :
+                    analytic_dict[analytic].append(amount_dict)
+                final_data.append(analytic_dict)
+            res = self.parse_sap_move_lines(self.format_final_dict(final_data), self.env.user.company_id, date_to,f)
 
-    def parse_sap_move_lines(self, temp_dict, final_dict, company, f):
+    def format_final_dict(self,final_dict):
+        import pprint
+        pprint.pformat(final_dict)
+        final_dict_format = []
+        for f_key in final_dict:
+            for fd_key,fd_value in f_key.items():
+                for fd_value_inner in fd_value:
+                    for fd_key,f_value in fd_value_inner.items():
+                        final_dict_format.append(list(f_value.values()))
+        return final_dict_format
+
+    def parse_sap_move_lines(self, final_data, company, date_to,f):
+        print("------------final_data",final_data)
         total_debit_credit_amt = 0.0
         total_je = 0.0
         total_records = 1
-        sap_seq = 1
-        for tk,tv in temp_dict.items():
-            if tv:
-                datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':','')).replace(" ", '') + str(sap_seq).rjust(2,'0')
-                sap_seq += 1
-                total_amount = tv[0]['credit'] or tv[0]['debit']
-                if tv[0]['debit'] and tv[0]['credit']:
-                    total_amount = abs(tv[0]['debit'] - tv[0]['credit'])
-                total_je += 1
+        for final_d in final_data:
+            print("------final_d----------",final_d)
+            print("------date_to----------",type(date_to))
+            datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':', '')).replace(" ", '') + str(1).rjust(2, '0')
+            total_amount = final_d[0]['credit'] or final_d[0]['debit']
+            if final_d[0]['debit'] and final_d[0]['credit']:
+                total_amount = abs(final_d[0]['debit'] - final_d[0]['credit'])
+            total_je += 1
+            total_records += 1
+            total_debit_credit_amt += abs(total_amount)
+            position_header = '1SV'
+            position_header += company.x_acc_area.x_code.ljust(4, ' ')
+            position_header += datetime_seq.ljust(16, ' ')
+            position_header += date_to.replace("-", "").ljust(8, ' ')
+            position_header += ''.ljust(10, ' ')
+            position_header += ''.ljust(12, ' ')
+            position_header += ''.ljust(10, ' ')
+            position_header += str(total_amount).ljust(16, ' ')
+            position_header += ''.ljust(50, ' ')
+            position_header += ''.ljust(1, ' ')
+            position_header += date_to.replace("-", "").ljust(8, ' ')
+            position_header += ''.ljust(3, ' ')
+            position_header += ''.ljust(24, ' ')
+            f.write(position_header + '\n')
+            print("==============================asfdasd==========")
+            for line in final_d:
+                print("-------line-----------",line)
+                month_year_string = date_to.split("-")
+                month_year_string = month_year_string[1]+"."+month_year_string[0]
+                aml_ids = str(line['id']).split('-')
+                for aml in aml_ids:
+                    aml_ids = self.env['account.move.line'].browse(int(aml))
+                    aml_ids.x_sap_export_seq = datetime_seq
+                # cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
+                profit_center_code = line['analytic_account_id'] and line['analytic_account_id'].code or ''
+                amount = line['debit'] or line['credit']
+                if line['debit'] and line['credit']:
+                    amount = abs(line['debit'] - line['credit'])
+                dc_type = line['debit'] and 'S' or 'H'
                 total_records += 1
-                total_debit_credit_amt += abs(total_amount)
-                position_header = '1SV'
-                position_header += company.x_acc_area.x_code.ljust(4, ' ')
-                position_header += datetime_seq.ljust(16, ' ')
-                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
-                position_header += ''.ljust(10, ' ')
-                position_header += ''.ljust(12, ' ')
-                position_header += ''.ljust(10, ' ')
-                position_header += str(total_amount).ljust(16, ' ')
-                position_header += ''.ljust(50, ' ')
-                position_header += ''.ljust(1, ' ')
-                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
-                position_header += ''.ljust(3, ' ')
-                position_header += ''.ljust(24, ' ')
-                f.write(position_header + '\n')
-                for line in tv:
-                    aml_ids = str(line['id']).split('-')
-                    for aml in aml_ids:
-                        aml_ids = self.env['account.move.line'].browse(int(aml))
-                        aml_ids.x_sap_export_seq = datetime_seq
-                    cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
-                    profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
-                    amount = line['debit'] or line['credit']
-                    if line['debit'] and line['credit']:
-                        amount = abs(line['debit'] - line['credit'])
-                    dc_type = line['debit'] and 'S' or 'H'
-                    total_records += 1
-                    position = '9'
-                    position += ''.ljust(2, ' ')
-                    position += ''.ljust(4, ' ')
-                    position += ''.ljust(16, ' ')
-                    position += ''.ljust(8, ' ')
-                    position += ''.ljust(10, ' ')
-                    position += profit_center_code.ljust(12, ' ')
-                    position += line['account_code'].ljust(10, ' ')
-                    position += str(amount).ljust(16, ' ')
-                    position += (company.x_sap_export_posting_text + ' ' + "03.2020").ljust(50, ' ')
-                    position += dc_type.ljust(1, ' ')
-                    position += ''.ljust(8, ' ')
-                    position += ''.ljust(3, ' ')
-                    position += ''.ljust(24, ' ')
-                    f.write(position + '\n')
+                position = '9'
+                position += ''.ljust(2, ' ')
+                position += ''.ljust(4, ' ')
+                position += ''.ljust(16, ' ')
+                position += ''.ljust(8, ' ')
+                position += ''.ljust(10, ' ')
+                position += profit_center_code.ljust(12, ' ')
+                # position += line['account_code'].ljust(10, ' ')
+                position += line['account_id'].code.ljust(10, ' ')
+                position += str(amount).ljust(16, ' ')
+                position += (company.x_sap_export_posting_text + ' ' + month_year_string).ljust(50, ' ')
+                position += dc_type.ljust(1, ' ')
+                position += ''.ljust(8, ' ')
+                position += ''.ljust(3, ' ')
+                position += ''.ljust(24, ' ')
+                f.write(position + '\n')
+                print("-----------22222222-------------")
 
-        for tk,tv in final_dict.items():
-            if tv:
-                datetime_seq = ((datetime.datetime.today().strftime(
-                    "%Y-%m-%d %H:%M").replace("-", "")).replace(':',
-                                                                '')).replace(
-                    " ", '') + str(sap_seq).rjust(2, '0')
-                sap_seq += 1
-                total_amount = tv[0]['credit'] or tv[0]['debit']
-                if tv[0]['debit'] and tv[0]['credit']:
-                    total_amount = abs(tv[0]['debit'] - tv[0]['credit'])
-                total_je += 1
-                total_records += 1
-                total_debit_credit_amt += abs(total_amount)
-                position_header = '1SV'
-                position_header += company.x_acc_area.x_code.ljust(4, ' ')
-                position_header += datetime_seq.ljust(16, ' ')
-                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
-                position_header += ''.ljust(10, ' ')
-                position_header += ''.ljust(12, ' ')
-                position_header += ''.ljust(10, ' ')
-                position_header += str(total_amount).ljust(16, ' ')
-                position_header += ''.ljust(50, ' ')
-                position_header += ''.ljust(1, ' ')
-                position_header += tk.date.strftime("%Y-%m-%d").replace("-", "").ljust(8, ' ')
-                position_header += ''.ljust(3, ' ')
-                position_header += ''.ljust(24, ' ')
-                f.write(position_header + '\n')
-                for line in tv:
-                    aml_ids = line['id'].split('-')
-                    for aml in aml_ids:
-                        aml_ids = self.env['account.move.line'].browse(
-                            int(aml))
-                        aml_ids.x_sap_export_seq = datetime_seq
-                    cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
-                    profit_center_code = line['credit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
-                    amount = line['debit'] or line['credit']
-                    dc_type = line['debit'] - line['credit'] > 0.0 and 'S' or 'H'
-                    if line['debit'] and line['credit']:
-                        amount = abs(line['debit'] - line['credit'])
-                    total_records += 1
-                    position = '9'
-                    position += ''.ljust(2, ' ')
-                    position += ''.ljust(4, ' ')
-                    position += ''.ljust(16, ' ')
-                    position += ''.ljust(8, ' ')
-                    position += ''.ljust(10, ' ')
-                    position += profit_center_code.ljust(12, ' ')
-                    position += line['account_code'].ljust(10, ' ')
-                    position += str(amount).ljust(16, ' ')
-                    position += (company.x_sap_export_posting_text + ' ' + "03.2020").ljust(50, ' ')
-                    position += dc_type.ljust(1, ' ')
-                    position += ''.ljust(8, ' ')
-                    position += ''.ljust(3, ' ')
-                    position += ''.ljust(24, ' ')
-                    f.write(position + '\n')
         current_time = strftime("%H:%M:%S", gmtime())
         position_footer = 'Z'
         position_footer += (datetime.date.today().strftime("%d-%m-%Y").replace("-", "")).ljust(8, ' ')
@@ -527,3 +459,4 @@ class ReportConfigure(models.AbstractModel):
         position_footer += str(total_debit_credit_amt).ljust(16, ' ')
         position_footer += str(total_debit_credit_amt).ljust(16, ' ')
         f.write(position_footer)
+        print("---------last-------------")
