@@ -213,7 +213,7 @@ class ReportConfigure(models.AbstractModel):
     def _get_reports_buttons(self):
         res = super(ReportConfigure, self)._get_reports_buttons()
         res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
-        res.append({'name': _('SAP View Items)'), 'action': 'export_view_items'})
+        res.append({'name': _('View Items (SAP)'), 'action': 'export_view_items'})
         return res
 
     def export_view_items(self, options):
