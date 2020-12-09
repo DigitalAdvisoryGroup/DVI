@@ -213,7 +213,38 @@ class ReportConfigure(models.AbstractModel):
     def _get_reports_buttons(self):
         res = super(ReportConfigure, self)._get_reports_buttons()
         res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
+        res.append({'name': _('SAP View Items)'), 'action': 'export_view_items'})
         return res
+
+    def export_view_items(self, options):
+        report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
+        aml_views_ids = self.env['account.move.line']
+        if report_id:
+            date_from = options.get("date").get("date_from")
+            date_to = options.get("date").get("date_to")
+            for line in report_id.line_ids:
+                line_domain = ast.literal_eval(line.domain)[0][2]
+                account_id = self.env['account.account'].browse(line_domain)
+                analytic_account_ids = self.env['account.analytic.account'].search([])
+                analytic_dict = {}
+                for analytic in analytic_account_ids:
+                    analytic_dict[analytic] = []
+                    aml_ids = self.env['account.move.line'].search(
+                        [
+                            ('move_id.date', '>=', date_from),
+                            ('move_id.date', '<=', date_to),
+                            ('move_id.state', '=', 'posted'),
+                            ('analytic_account_id', '=', analytic.id),
+                            ('account_id', '=', account_id.id),
+                            ('account_id.x_ext_ledger_account', '=', False),
+                            '|', ('debit', '!=', 0.0), ('credit', '!=', 0.0)
+                        ]
+
+                    )
+                    aml_views_ids |= aml_ids
+        action = self.env.ref('justthis_customization.action_account_moves_custom').read()[0]
+        action['domain'] = str([('id', 'in', aml_views_ids.ids)])
+        return action
 
     def _get_templates(self):
         templates = super(ReportConfigure, self)._get_templates()
