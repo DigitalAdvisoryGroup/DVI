@@ -411,13 +411,12 @@ class ReportConfigure(models.AbstractModel):
         return final_dict_format
 
     def parse_sap_move_lines(self, final_data, company, date_to,f):
-        print("------------final_data",final_data)
+        # print("------------final_data",final_data)
         total_debit_credit_amt = 0.0
         total_je = 0.0
         total_records = 1
         for final_d in final_data:
             print("------final_d----------",final_d)
-            print("------date_to----------",type(date_to))
             datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':', '')).replace(" ", '') + str(1).rjust(2, '0')
             total_amount = final_d[0]['credit'] or final_d[0]['debit']
             if final_d[0]['debit'] and final_d[0]['credit']:
@@ -439,9 +438,9 @@ class ReportConfigure(models.AbstractModel):
             position_header += ''.ljust(3, ' ')
             position_header += ''.ljust(24, ' ')
             f.write(position_header + '\n')
-            print("==============================asfdasd==========")
+            # print("==============================asfdasd==========")
             for line in final_d:
-                print("-------line-----------",line)
+                # print("-------line-----------",line)
                 month_year_string = date_to.split("-")
                 month_year_string = month_year_string[1]+"."+month_year_string[0]
                 aml_ids = str(line['id']).split('-')
@@ -453,7 +452,7 @@ class ReportConfigure(models.AbstractModel):
                 amount = line['debit'] or line['credit']
                 if line['debit'] and line['credit']:
                     amount = abs(line['debit'] - line['credit'])
-                dc_type = line['debit'] and 'S' or 'H'
+                dc_type = (line['debit'] - line['credit']) > 0.0 and 'S' or 'H'
                 total_records += 1
                 position = '9'
                 position += ''.ljust(2, ' ')
@@ -471,7 +470,7 @@ class ReportConfigure(models.AbstractModel):
                 position += ''.ljust(3, ' ')
                 position += ''.ljust(24, ' ')
                 f.write(position + '\n')
-                print("-----------22222222-------------")
+                # print("-----------22222222-------------")
 
         current_time = strftime("%H:%M:%S", gmtime())
         position_footer = 'Z'
