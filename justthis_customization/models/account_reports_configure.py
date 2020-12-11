@@ -349,7 +349,9 @@ class ReportConfigure(models.AbstractModel):
             account_ids = self.env['account.account']
             for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
-                account_id = self.env['account.account'].browse(line_domain)
+                account_ids |= self.env['account.account'].browse(line_domain)
+            x_ext_code = list(set(account_ids.mapped("x_code_external")))
+            for x_code in x_ext_code:
                 analytic_account_ids = self.env['account.analytic.account'].search([])
                 analytic_dict = {}
                 for analytic in analytic_account_ids:
@@ -360,37 +362,37 @@ class ReportConfigure(models.AbstractModel):
                          ('move_id.date', '<=', date_to),
                          ('move_id.state', '=', 'posted'),
                          ('analytic_account_id', '=',analytic.id),
-                         ('account_id', '=', account_id.id),
+                         ('account_id.x_code_external', '=', x_code),
                          ('account_id.x_ext_ledger_account', '=', False),
                          '|',('debit','!=',0.0),('credit','!=',0.0)
                         ]
 
                     )
                     amount_dict = {}
-                    for aml in  aml_ids:
+                    for aml in aml_ids:
                         if aml.debit > 0.0:
                             counter_aml_ids = aml.move_id.line_ids.filtered(
                                 lambda cml: cml.id != aml.id and cml.credit > 0.0)
                             aml_dict = {
-                                aml.account_id:{'id':str(aml.id),'debit':aml.debit,'credit':0, 'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
-                                counter_aml_ids.account_id:{'id':str(aml.id),'debit':0,'credit':aml.debit,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
+                                aml.account_id.x_code_external:{'id':str(aml.id),'debit':aml.debit,'credit':0, 'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
+                                counter_aml_ids.account_id.x_code_external:{'id':str(aml.id),'debit':0,'credit':aml.debit,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
                             }
                         else:
                             counter_aml_ids = aml.move_id.line_ids.filtered(
                                 lambda cml: cml.id != aml.id and cml.debit > 0.0)
                             aml_dict = {
-                                aml.account_id: {'id':str(aml.id),'debit': 0, 'credit': aml.credit,'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
-                                counter_aml_ids.account_id: {'id':str(aml.id),'debit': aml.credit, 'credit': 0,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
+                                aml.account_id.x_code_external: {'id':str(aml.id),'debit': 0, 'credit': aml.credit,'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
+                                counter_aml_ids.account_id.x_code_external: {'id':str(aml.id),'debit': aml.credit, 'credit': 0,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
                             }
                         if len(counter_aml_ids) == 1:
-                            account_key_pair = '-'.join([aml.account_id.code,counter_aml_ids.account_id.code])
+                            account_key_pair = '-'.join([aml.account_id.x_code_external,counter_aml_ids.account_id.x_code_external])
                             if account_key_pair in amount_dict:
-                                amount_dict[account_key_pair][aml.account_id]['debit'] +=aml_dict[aml.account_id]['debit']
-                                amount_dict[account_key_pair][aml.account_id]['credit'] +=aml_dict[aml.account_id]['credit']
-                                amount_dict[account_key_pair][aml.account_id]['id'] +='-'+aml_dict[aml.account_id]['id']
-                                amount_dict[account_key_pair][counter_aml_ids.account_id]['debit'] +=aml_dict[counter_aml_ids.account_id]['debit']
-                                amount_dict[account_key_pair][counter_aml_ids.account_id]['credit'] +=aml_dict[counter_aml_ids.account_id]['credit']
-                                amount_dict[account_key_pair][counter_aml_ids.account_id]['id'] +='-'+aml_dict[counter_aml_ids.account_id]['id']
+                                amount_dict[account_key_pair][aml.account_id.x_code_external]['debit'] +=aml_dict[aml.account_id.x_code_external]['debit']
+                                amount_dict[account_key_pair][aml.account_id.x_code_external]['credit'] +=aml_dict[aml.account_id.x_code_external]['credit']
+                                amount_dict[account_key_pair][aml.account_id.x_code_external]['id'] +='-'+aml_dict[aml.account_id.x_code_external]['id']
+                                amount_dict[account_key_pair][counter_aml_ids.account_id.x_code_external]['debit'] +=aml_dict[counter_aml_ids.account_id.x_code_external]['debit']
+                                amount_dict[account_key_pair][counter_aml_ids.account_id.x_code_external]['credit'] +=aml_dict[counter_aml_ids.account_id.x_code_external]['credit']
+                                amount_dict[account_key_pair][counter_aml_ids.account_id.x_code_external]['id'] +='-'+aml_dict[counter_aml_ids.account_id.x_code_external]['id']
                             else:
                                 amount_dict[account_key_pair] = aml_dict
 
@@ -416,7 +418,6 @@ class ReportConfigure(models.AbstractModel):
         total_je = 0.0
         total_records = 1
         for final_d in final_data:
-            print("------final_d----------",final_d)
             datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':', '')).replace(" ", '') + str(1).rjust(2, '0')
             total_amount = final_d[0]['credit'] or final_d[0]['debit']
             if final_d[0]['debit'] and final_d[0]['credit']:
@@ -462,7 +463,7 @@ class ReportConfigure(models.AbstractModel):
                 position += ''.ljust(10, ' ')
                 position += profit_center_code.ljust(12, ' ')
                 # position += line['account_code'].ljust(10, ' ')
-                position += line['account_id'].code.ljust(10, ' ')
+                position += line['account_code'].ljust(10, ' ')
                 position += str(amount).ljust(16, ' ')
                 position += (company.x_sap_export_posting_text + ' ' + month_year_string).ljust(50, ' ')
                 position += dc_type.ljust(1, ' ')

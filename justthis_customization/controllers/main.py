@@ -42,12 +42,13 @@ class FinancialReportController(http.Controller):
                 )
             if output_format == 'sap':
                 content = report_obj.get_sap_txt(options, json_data)
-                report_name = request.env.user.company_id.x_sap_export_file
+                end_date = options.get("date").get("date_to").replace("-","")
+                report_name = request.env.user.company_id.x_sap_export_file+end_date
                 response = request.make_response(
                     content,
                     headers=[
                         ('Content-Type', 'text/plain'),
-                        ('Content-Disposition', content_disposition(report_name + '.txt')),
+                        ('Content-Disposition', content_disposition(report_name + '.data')),
                         ('Content-Length', len(content))
                     ]
                 )
