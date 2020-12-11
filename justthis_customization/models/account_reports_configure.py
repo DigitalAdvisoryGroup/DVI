@@ -349,9 +349,9 @@ class ReportConfigure(models.AbstractModel):
             account_ids = self.env['account.account']
             for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
-                account_ids |= self.env['account.account'].browse(line_domain)
-            x_ext_code = list(set(account_ids.mapped("x_code_external")))
-            for x_code in x_ext_code:
+                account_id = self.env['account.account'].browse(line_domain)
+            # x_ext_code = list(set(account_ids.mapped("x_code_external")))
+            # for x_code in x_ext_code:
                 analytic_account_ids = self.env['account.analytic.account'].search([])
                 analytic_dict = {}
                 for analytic in analytic_account_ids:
@@ -362,7 +362,8 @@ class ReportConfigure(models.AbstractModel):
                          ('move_id.date', '<=', date_to),
                          ('move_id.state', '=', 'posted'),
                          ('analytic_account_id', '=',analytic.id),
-                         ('account_id.x_code_external', '=', x_code),
+                         # ('account_id.x_code_external', '=', x_code),
+                         ('account_id', '=', account_id.id),
                          ('account_id.x_ext_ledger_account', '=', False),
                          '|',('debit','!=',0.0),('credit','!=',0.0)
                         ]
