@@ -370,6 +370,10 @@ class ReportConfigure(models.AbstractModel):
 
                     )
                     amount_dict = {}
+                    # if aml_ids:
+                    #     print("--------aml_ids------",len(aml_ids))
+                    #     print("--------code------",account_id.code)
+                    #     print("--------analytic------",analytic.code)
                     for aml in aml_ids:
                         if aml.debit > 0.0:
                             counter_aml_ids = aml.move_id.line_ids.filtered(
@@ -396,10 +400,10 @@ class ReportConfigure(models.AbstractModel):
                                 amount_dict[account_key_pair][counter_aml_ids.account_id.x_code_external]['id'] +='-'+aml_dict[counter_aml_ids.account_id.x_code_external]['id']
                             else:
                                 amount_dict[account_key_pair] = aml_dict
-
-                if aml_ids :
-                    analytic_dict[analytic].append(amount_dict)
+                    if aml_ids :
+                        analytic_dict[analytic].append(amount_dict)
                 final_data.append(analytic_dict)
+            # stop
             res = self.parse_sap_move_lines(self.format_final_dict(final_data), self.env.user.company_id, date_to,f)
 
     def format_final_dict(self,final_dict):
@@ -411,6 +415,7 @@ class ReportConfigure(models.AbstractModel):
                 for fd_value_inner in fd_value:
                     for fd_key,f_value in fd_value_inner.items():
                         final_dict_format.append(list(f_value.values()))
+        # print("-------final_dict_format------------",final_dict_format)
         return final_dict_format
 
     def parse_sap_move_lines(self, final_data, company, date_to,f):
@@ -491,4 +496,4 @@ class ReportConfigure(models.AbstractModel):
         position_footer += str(total_debit_credit_amt).ljust(16, ' ')
         position_footer += str(total_debit_credit_amt).ljust(16, ' ')
         f.write(position_footer)
-        print("---------last-------------")
+        # print("---------last-------------")
