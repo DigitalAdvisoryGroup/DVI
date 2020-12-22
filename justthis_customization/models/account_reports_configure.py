@@ -416,7 +416,6 @@ class ReportConfigure(models.AbstractModel):
         rev_final_format = []
         for f_key in final_dict:
             for fd_key,fd_value in f_key.items():
-                if not fd_key:
                 for fd_value_inner in fd_value:
                     for fd_key_inner,f_value in fd_value_inner.items():
                         if not fd_key:
