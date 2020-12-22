@@ -207,7 +207,6 @@ class ReportConfigure(models.AbstractModel):
                     'name': '',
                     'columns': [{'name': v} for v in columns],
                 })
-        print("------------lines",lines)
         return lines
 
     def _get_reports_buttons(self):
@@ -227,14 +226,14 @@ class ReportConfigure(models.AbstractModel):
                 account_id = self.env['account.account'].browse(line_domain)
                 analytic_account_ids = self.env['account.analytic.account'].search([])
                 analytic_dict = {}
-                for analytic in analytic_account_ids:
+                for analytic in analytic_account_ids.ids+[False]:
                     analytic_dict[analytic] = []
                     aml_ids = self.env['account.move.line'].search(
                         [
                             ('move_id.date', '>=', date_from),
                             ('move_id.date', '<=', date_to),
                             ('move_id.state', '=', 'posted'),
-                            ('analytic_account_id', '=', analytic.id),
+                            ('analytic_account_id', '=', analytic),
                             ('account_id', '=', account_id.id),
                             ('account_id.x_ext_ledger_account', '=', False),
                             '|', ('debit', '!=', 0.0), ('credit', '!=', 0.0)
@@ -350,19 +349,17 @@ class ReportConfigure(models.AbstractModel):
             for line in report_id.line_ids:
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
-            # x_ext_code = list(set(account_ids.mapped("x_code_external")))
-            # for x_code in x_ext_code:
+                account_ids |= account_id
                 analytic_account_ids = self.env['account.analytic.account'].search([])
                 analytic_dict = {}
-                for analytic in analytic_account_ids:
+                for analytic in analytic_account_ids.ids + [False]:
                     analytic_dict[analytic] = []
                     aml_ids = self.env['account.move.line'].search(
                         [
                          ('move_id.date', '>=', date_from),
                          ('move_id.date', '<=', date_to),
                          ('move_id.state', '=', 'posted'),
-                         ('analytic_account_id', '=',analytic.id),
-                         # ('account_id.x_code_external', '=', x_code),
+                         ('analytic_account_id', '=',analytic),
                          ('account_id', '=', account_id.id),
                          ('account_id.x_ext_ledger_account', '=', False),
                          '|',('debit','!=',0.0),('credit','!=',0.0)
@@ -370,28 +367,36 @@ class ReportConfigure(models.AbstractModel):
 
                     )
                     amount_dict = {}
-                    # if aml_ids:
-                    #     print("--------aml_ids------",len(aml_ids))
-                    #     print("--------code------",account_id.code)
-                    #     print("--------analytic------",analytic.code)
                     for aml in aml_ids:
                         if aml.debit > 0.0:
-                            counter_aml_ids = aml.move_id.line_ids.filtered(
-                                lambda cml: cml.id != aml.id and cml.credit > 0.0)
+                            if not analytic:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.credit > 0.0 and not cml.analytic_account_id and not cml.account_id.x_ext_ledger_account)
+                            else:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.credit > 0.0)
                             aml_dict = {
                                 aml.account_id.x_code_external:{'id':str(aml.id),'debit':aml.debit,'credit':0, 'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
                                 counter_aml_ids.account_id.x_code_external:{'id':str(aml.id),'debit':0,'credit':aml.debit,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
                             }
                         else:
-                            counter_aml_ids = aml.move_id.line_ids.filtered(
-                                lambda cml: cml.id != aml.id and cml.debit > 0.0)
+                            if not analytic:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.debit > 0.0 and not cml.analytic_account_id and not cml.account_id.x_ext_ledger_account)
+                            else:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.debit > 0.0)
                             aml_dict = {
                                 aml.account_id.x_code_external: {'id':str(aml.id),'debit': 0, 'credit': aml.credit,'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
                                 counter_aml_ids.account_id.x_code_external: {'id':str(aml.id),'debit': aml.credit, 'credit': 0,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
                             }
+                        if not counter_aml_ids: continue
                         if len(counter_aml_ids) == 1:
                             account_key_pair = '-'.join([aml.account_id.x_code_external,counter_aml_ids.account_id.x_code_external])
-                            if account_key_pair in amount_dict:
+                            rev_account_key_pair = '-'.join([counter_aml_ids.account_id.x_code_external,aml.account_id.x_code_external])
+                            if rev_account_key_pair in amount_dict:
+                                pass
+                            elif account_key_pair in amount_dict:
                                 amount_dict[account_key_pair][aml.account_id.x_code_external]['debit'] +=aml_dict[aml.account_id.x_code_external]['debit']
                                 amount_dict[account_key_pair][aml.account_id.x_code_external]['credit'] +=aml_dict[aml.account_id.x_code_external]['credit']
                                 amount_dict[account_key_pair][aml.account_id.x_code_external]['id'] +='-'+aml_dict[aml.account_id.x_code_external]['id']
@@ -403,23 +408,26 @@ class ReportConfigure(models.AbstractModel):
                     if aml_ids :
                         analytic_dict[analytic].append(amount_dict)
                 final_data.append(analytic_dict)
-            # stop
             res = self.parse_sap_move_lines(self.format_final_dict(final_data), self.env.user.company_id, date_to,f)
 
     def format_final_dict(self,final_dict):
         import pprint
-        pprint.pformat(final_dict)
         final_dict_format = []
+        rev_final_format = []
         for f_key in final_dict:
             for fd_key,fd_value in f_key.items():
+                if not fd_key:
                 for fd_value_inner in fd_value:
-                    for fd_key,f_value in fd_value_inner.items():
+                    for fd_key_inner,f_value in fd_value_inner.items():
+                        if not fd_key:
+                            rev_final_format.append(fd_key_inner)
+                            rev_fd_key_inner = fd_key_inner.split("-")
+                            rev_fd_key_inner = rev_fd_key_inner[1]+"-"+rev_fd_key_inner[0]
+                        if not fd_key and rev_fd_key_inner in rev_final_format:continue
                         final_dict_format.append(list(f_value.values()))
-        # print("-------final_dict_format------------",final_dict_format)
         return final_dict_format
-
+    #
     def parse_sap_move_lines(self, final_data, company, date_to,f):
-        # print("------------final_data",final_data)
         total_debit_credit_amt = 0.0
         total_je = 0.0
         total_records = 1
@@ -445,16 +453,13 @@ class ReportConfigure(models.AbstractModel):
             position_header += ''.ljust(3, ' ')
             position_header += ''.ljust(24, ' ')
             f.write(position_header + '\n')
-            # print("==============================asfdasd==========")
             for line in final_d:
-                # print("-------line-----------",line)
                 month_year_string = date_to.split("-")
                 month_year_string = month_year_string[1]+"."+month_year_string[0]
                 aml_ids = str(line['id']).split('-')
                 for aml in aml_ids:
                     aml_ids = self.env['account.move.line'].browse(int(aml))
                     aml_ids.x_sap_export_seq = datetime_seq
-                # cost_center_code = line['debit'] and line['analytic_account_id'] and line['analytic_account_id'].code or ''
                 profit_center_code = line['analytic_account_id'] and line['analytic_account_id'].code or ''
                 amount = line['debit'] or line['credit']
                 if line['debit'] and line['credit']:
@@ -468,7 +473,6 @@ class ReportConfigure(models.AbstractModel):
                 position += ''.ljust(8, ' ')
                 position += ''.ljust(10, ' ')
                 position += profit_center_code.ljust(12, ' ')
-                # position += line['account_code'].ljust(10, ' ')
                 position += line['account_code'].ljust(10, ' ')
                 position += str(amount).ljust(16, ' ')
                 position += (company.x_sap_export_posting_text + ' ' + month_year_string).ljust(50, ' ')
@@ -477,7 +481,6 @@ class ReportConfigure(models.AbstractModel):
                 position += ''.ljust(3, ' ')
                 position += ''.ljust(24, ' ')
                 f.write(position + '\n')
-                # print("-----------22222222-------------")
 
         current_time = strftime("%H:%M:%S", gmtime())
         position_footer = 'Z'
@@ -496,4 +499,3 @@ class ReportConfigure(models.AbstractModel):
         position_footer += str(total_debit_credit_amt).ljust(16, ' ')
         position_footer += str(total_debit_credit_amt).ljust(16, ' ')
         f.write(position_footer)
-        # print("---------last-------------")
