@@ -194,11 +194,12 @@ class ReportConfigure(models.AbstractModel):
                 move_ids = self.env['account.move'].search(domain)
                 main_account_balance = 0.0
                 for move in move_ids:
-                    aml_ids = self.env['account.move.line'].search(
-                        [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
-                    if aml_ids and not options['external']: continue
+                    # aml_ids = self.env['account.move.line'].search(
+                    #     [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
+                    # if aml_ids and not options['external']: continue
                     for aml in move.line_ids:
                         if aml.account_id.id == account_id.id:
+                            if not options['external'] and account_id.x_ext_ledger_account:continue
                             main_account_balance += aml.balance
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
                            self.format_value(main_account_balance), '','','']
