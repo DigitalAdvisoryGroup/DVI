@@ -5,3 +5,4 @@
 from . import invoice_depreciation_wizard
 from . import invoice_reversal_wizard
 from . import account_report_wizard
+from . import add_analytic_account

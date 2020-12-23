@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_update_analytic_account" model="ir.ui.view">
+            <field name="name">update.analytic.account.form</field>
+            <field name="model">update.analytic.account</field>
+            <field name="arch" type="xml">
+                <form string="Update Analytic Account">
+                         <group>
+                             <field name="analytic_account_id" required="1"/>
+                         </group>
+                    <footer>
+                        <button string='Add Analytic Account' name="update_analytic_account" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+               </form>
+            </field>
+        </record>
+
+        <act_window
+            id="act_view_update_analytic_account"
+            name="Update Analytic Account"
+            res_model="update.analytic.account"
+            src_model="account.move.line"
+            view_mode="form"
+            multi="True"
+            target="new"
+            key2="client_action_multi"
+        />
+
+
+
+
+    </data>
+</odoo>

@@ -27,6 +27,14 @@ class AccountMoveLine(models.Model):
     x_code_external = fields.Char(related="account_id.x_code_external", store=True)
     is_reversal_line = fields.Boolean("Is Reversal Line")
     is_depreciate_line = fields.Boolean("Is Depreciate Line")
+    is_missing_analytic_account = fields.Boolean("Missing Analytic Account", compute="_set_missing_analytic_account")
+
+    @api.depends("account_id.x_analytic_account_required")
+    def _set_missing_analytic_account(self):
+        for rec in self:
+            if rec.account_id and rec.account_id.x_analytic_account_required and not rec.analytic_account_id:
+                rec.is_missing_analytic_account = True
+
 
 class ReportAccountFinancialReportLine(models.Model):
     _inherit = "account.financial.html.report.line"
@@ -214,7 +222,43 @@ class ReportConfigure(models.AbstractModel):
         res = super(ReportConfigure, self)._get_reports_buttons()
         res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
         res.append({'name': _('View Items (SAP)'), 'action': 'export_view_items'})
+        res.append({'name': _('Period Closure'), 'action': 'period_closure'})
         return res
+
+    def period_closure(self, options):
+        report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
+        final_aml_ids = self.env['account.move.line']
+        if report_id:
+            date_from = options.get("date").get("date_from")
+            date_to = options.get("date").get("date_to")
+            for line in report_id.line_ids:
+                line_domain = ast.literal_eval(line.domain)[0][2]
+                account_id = self.env['account.account'].browse(line_domain)
+                aml_ids = self.env['account.move.line'].search(
+                    [
+                        ('move_id.date', '>=', date_from),
+                        ('move_id.date', '<=', date_to),
+                        ('move_id.state', '=', 'posted'),
+                        ('account_id', '=', account_id.id),
+                        ('account_id.x_ext_ledger_account', '=', False),
+                        '|', ('debit', '!=', 0.0), ('credit', '!=', 0.0)
+                    ]
+
+                )
+                final_aml_ids |= aml_ids
+        if final_aml_ids:
+            missing_analytic_aml_ids = final_aml_ids.filtered(lambda cml: cml.is_missing_analytic_account)
+            if missing_analytic_aml_ids:
+                raise UserError(_('Analytic Account is missing in %s Journal items' % missing_analytic_aml_ids.mapped("move_id").mapped("name")))
+            missing_sap_seq_aml_ids = final_aml_ids.filtered(lambda cml: not cml.x_sap_export_seq)
+            if missing_sap_seq_aml_ids:
+                raise UserError(_('Please export SAP file before closing this period'))
+            for f_aml in final_aml_ids:
+                f_aml.x_sap_export_seq_final = f_aml.x_sap_export_seq
+        # action = self.env.ref('account_accountant.action_view_account_change_lock_date').read()[0]
+        date_to = options.get("date").get("date_to")
+        self.env.user.company_id.write({'period_lock_date': date_to})
+        return True
 
     def export_view_items(self, options):
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
@@ -226,9 +270,7 @@ class ReportConfigure(models.AbstractModel):
                 line_domain = ast.literal_eval(line.domain)[0][2]
                 account_id = self.env['account.account'].browse(line_domain)
                 analytic_account_ids = self.env['account.analytic.account'].search([])
-                analytic_dict = {}
                 for analytic in analytic_account_ids.ids+[False]:
-                    analytic_dict[analytic] = []
                     aml_ids = self.env['account.move.line'].search(
                         [
                             ('move_id.date', '>=', date_from),
@@ -412,7 +454,6 @@ class ReportConfigure(models.AbstractModel):
             res = self.parse_sap_move_lines(self.format_final_dict(final_data), self.env.user.company_id, date_to,f)
 
     def format_final_dict(self,final_dict):
-        import pprint
         final_dict_format = []
         rev_final_format = []
         for f_key in final_dict:
@@ -431,8 +472,9 @@ class ReportConfigure(models.AbstractModel):
         total_debit_credit_amt = 0.0
         total_je = 0.0
         total_records = 1
+        count = 1
         for final_d in final_data:
-            datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':', '')).replace(" ", '') + str(1).rjust(2, '0')
+            datetime_seq = ((datetime.datetime.today().strftime("%Y-%m-%d %H:%M").replace("-", "")).replace(':', '')).replace(" ", '') + str(count).rjust(2, '0')
             total_amount = final_d[0]['credit'] or final_d[0]['debit']
             if final_d[0]['debit'] and final_d[0]['credit']:
                 total_amount = abs(final_d[0]['debit'] - final_d[0]['credit'])
@@ -481,7 +523,7 @@ class ReportConfigure(models.AbstractModel):
                 position += ''.ljust(3, ' ')
                 position += ''.ljust(24, ' ')
                 f.write(position + '\n')
-
+            count += 1
         current_time = strftime("%H:%M:%S", gmtime())
         position_footer = 'Z'
         position_footer += (datetime.date.today().strftime("%d-%m-%Y").replace("-", "")).ljust(8, ' ')
