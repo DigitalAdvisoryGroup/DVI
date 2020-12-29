@@ -9,6 +9,7 @@
                 <tree string="Report Configure">
                     <field name="name"/>
                     <field name="generated_menu_id"/>
+                    <field name="is_fin_closuer_report"/>
                     <field name="state" invisible="1"/>
                 </tree>
             </field>
@@ -31,6 +32,7 @@
                             <field name="generated_menu_id"/>
                             <field name="financial_id" invisible="1"/>
                             <field name="state" invisible="1"/>
+                            <field name="is_fin_closuer_report"/>
                         </group>
                         <group>
                             <field name="account_ids" nolabel="1" attrs="{'readonly': [('state','=','created')]}">

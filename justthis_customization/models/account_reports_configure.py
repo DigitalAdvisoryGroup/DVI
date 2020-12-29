@@ -36,6 +36,11 @@ class AccountMoveLine(models.Model):
                 rec.is_missing_analytic_account = True
 
 
+class ReportAccountFinancialReport(models.Model):
+    _inherit = "account.financial.html.report"
+
+    is_fin_closuer_report = fields.Boolean("finance closure report?")
+
 class ReportAccountFinancialReportLine(models.Model):
     _inherit = "account.financial.html.report.line"
 
@@ -56,6 +61,7 @@ class AccountReportConfigured(models.Model):
                                         )
     parent_id = fields.Many2one('ir.ui.menu', related="generated_menu_id.parent_id", readonly=False)
     state = fields.Selection([('created', 'Created')], string="State", default="")
+    is_fin_closuer_report = fields.Boolean("finance closure report?")
 
     @api.model
     def create(self, vals):
@@ -135,6 +141,7 @@ class AccountReportConfigured(models.Model):
             financial_vals = {
                 'name': report.name,
                 'generated_menu_id': report.generated_menu_id.id,
+                'is_fin_closuer_report': report.is_fin_closuer_report,
                 'line_ids': financial_line_vals
             }
             financial_id = self.env['account.financial.html.report'].create(financial_vals)
@@ -169,6 +176,7 @@ class ReportConfigure(models.AbstractModel):
         if additional_context is None:
             additional_context = {}
         additional_context['company_accounting_area'] = self.env.user.company_id.x_acc_area.x_code
+        additional_context['current_lock_date'] = self.env.user.company_id.fiscalyear_lock_date
         return super(ReportConfigure, self).get_html(options, line_id=line_id,
                                                      additional_context=additional_context)
 
@@ -202,12 +210,12 @@ class ReportConfigure(models.AbstractModel):
                 move_ids = self.env['account.move'].search(domain)
                 main_account_balance = 0.0
                 for move in move_ids:
-                    # aml_ids = self.env['account.move.line'].search(
-                    #     [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
-                    # if aml_ids and not options['external']: continue
+                    aml_ids = self.env['account.move.line'].search(
+                        [('move_id', '=', move.id), ('account_id.x_ext_ledger_account', '=', True)])
+                    if aml_ids and not options['external']: continue
                     for aml in move.line_ids:
                         if aml.account_id.id == account_id.id:
-                            if not options['external'] and account_id.x_ext_ledger_account:continue
+                            # if not options['external'] and account_id.x_ext_ledger_account:continue
                             main_account_balance += aml.balance
                 columns = [account_id.code, account_id.x_code_external, account_id.name,
                            self.format_value(main_account_balance), '','','']
@@ -220,9 +228,11 @@ class ReportConfigure(models.AbstractModel):
 
     def _get_reports_buttons(self):
         res = super(ReportConfigure, self)._get_reports_buttons()
-        res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
-        res.append({'name': _('View Items (SAP)'), 'action': 'export_view_items'})
-        res.append({'name': _('Period Closure'), 'action': 'period_closure'})
+        report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
+        if report_id and report_id.is_fin_closuer_report:
+            res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
+            res.append({'name': _('View Items (SAP)'), 'action': 'export_view_items'})
+            res.append({'name': _('Period Closure'), 'action': 'period_closure'})
         return res
 
     def period_closure(self, options):
@@ -238,8 +248,14 @@ class ReportConfigure(models.AbstractModel):
             for f_aml in final_aml_ids:
                 f_aml.x_sap_export_seq_final = f_aml.x_sap_export_seq
         date_to = options.get("date").get("date_to")
-        self.env.user.company_id.write({'period_lock_date': date_to,'fiscalyear_lock_date': date_to})
-        return {}
+        action = self.env.ref('account_accountant.action_view_account_change_lock_date').read()[0]
+        ctx = json.loads(action['context'])
+        ctx.update({"default_period_lock_date": date_to, "default_fiscalyear_lock_date": date_to})
+        print("---------ctx----------",ctx)
+        action['context'] = json.dumps(ctx)
+        print("-------action['context']----------",action['context'])
+        # self.env.user.company_id.write({'period_lock_date': date_to,'fiscalyear_lock_date': date_to})
+        return action
 
     def export_view_items(self, options):
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))

@@ -13,6 +13,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         invoice_ids = self.env['account.invoice'].search([('date_invoice','>=',data['form']['date_from']),
                                                           ('date_invoice', '<=',data['form']['date_to']),
                                                           ('state','in',('open','paid')),
+                                                          ('type','=','out_invoice'),
                                                           ('journal_id','in',data['form']['journal_ids']),
                                                           ('partner_id','=',partner.id),
                                                           ('company_id','=',data['form']['company_id'][0])
@@ -42,8 +43,8 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 "lines": []
             }
             inv_lines = []
-            payment_vals = inv._get_payments_vals()
-            print("---------payment-------",payment_vals)
+            # payment_vals = inv._get_payments_vals()
+            # print("---------payment-------",payment_vals)
             for line in inv.invoice_line_ids:
                 inv_lines.append({
                     "date": inv.date_invoice,
@@ -60,16 +61,26 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     "is_depreciate": line.is_depreciation
                 })
 
-            if payment_vals:
-                for payment in payment_vals:
+            if inv.payment_move_line_ids:
+                for aml in inv.payment_move_line_ids:
                     inv_lines.append({
-                        "date": payment.date,
-                        "name": payment.ref,
-                        "amount": payment.amount,
+                        "date": aml.date_maturity,
+                        "name": aml.move_id.name+'-'+aml.name,
+                        "x_jt_main1_id": aml.x_jt_main1_id,
+                        "x_jt_main2_id": aml.x_jt_main2_id,
+                        "x_jt_deposit_id": aml.x_jt_deposit_id,
+                        "account_name": aml.account_id.name,
+                        "account_code": aml.account_id.code,
+                        "analytic_account_name": aml.analytic_account_id.name,
+                        "qty": aml.quantity,
+                        "amount": aml.debit > 0.0 and aml.debit or aml.credit,
+                        "is_reversal": aml.is_reversal_line,
+                        "is_depreciate": aml.is_depreciate_line
                     })
             inv_vals['lines'] = inv_lines
             full_account.append(inv_vals)
-        # print("------full_account--------------",full_account)
+        import pprint
+        print("------full_account--------------",pprint.pformat(full_account))
 
         # stop
         # currency = self.env['res.currency']
@@ -80,7 +91,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         # print("-------reconcile_clause---------",reconcile_clause)
         # print("-------params---------",params)
         # query = """
-        #     SELECT "account_move_line".id, "account_move_line".date,"account_move_line".x_jt_main1_id,"account_move_line".x_jt_main2_id,"account_move_line".x_jt_deposit_id, j.code, acc.code as a_code, acc.name as a_name, "account_move_line".ref, m.name as move_name, "account_move_line".name, "account_move_line".debit, "account_move_line".credit, "account_move_line".amount_currency,"account_move_line".currency_id, c.symbol AS currency_code
+        #     SELECT "account_move_line".id, "account_move_line".invoice_id, "account_move_line".date,"account_move_line".x_jt_main1_id,"account_move_line".x_jt_main2_id,"account_move_line".x_jt_deposit_id, j.code, acc.code as a_code, acc.name as a_name, "account_move_line".ref, m.name as move_name, "account_move_line".name, "account_move_line".debit, "account_move_line".credit, "account_move_line".amount_currency,"account_move_line".currency_id, c.symbol AS currency_code
         #     FROM """ + query_get_data[0] + """
         #     LEFT JOIN account_journal j ON ("account_move_line".journal_id = j.id)
         #     LEFT JOIN account_account acc ON ("account_move_line".account_id = acc.id)
@@ -92,6 +103,8 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         #         ORDER BY "account_move_line".date"""
         # self.env.cr.execute(query, tuple(params))
         # res = self.env.cr.dictfetchall()
+        # print("-------res-------------------",res)
+        # stop
         # sum = 0.0
         # lang_code = self.env.context.get('lang') or 'en_US'
         # lang = self.env['res.lang']

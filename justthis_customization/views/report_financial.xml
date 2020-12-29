@@ -84,6 +84,9 @@
                 <h2>Accounting Area :
                     <t t-esc="company_accounting_area"></t>
                 </h2>
+                <h3>Current Lock Date :
+                    <t t-esc="current_lock_date"></t>
+                </h3>
             </xpath>
         </template>
 
