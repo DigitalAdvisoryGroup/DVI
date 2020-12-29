@@ -42,6 +42,8 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 "lines": []
             }
             inv_lines = []
+            payment_vals = inv._get_payments_vals()
+            print("---------payment-------",payment_vals)
             for line in inv.invoice_line_ids:
                 inv_lines.append({
                     "date": inv.date_invoice,
@@ -57,6 +59,14 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     "is_reversal": line.is_reversal,
                     "is_depreciate": line.is_depreciation
                 })
+
+            if payment_vals:
+                for payment in payment_vals:
+                    inv_lines.append({
+                        "date": payment.date,
+                        "name": payment.ref,
+                        "amount": payment.amount,
+                    })
             inv_vals['lines'] = inv_lines
             full_account.append(inv_vals)
         # print("------full_account--------------",full_account)

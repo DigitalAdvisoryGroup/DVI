@@ -226,26 +226,8 @@ class ReportConfigure(models.AbstractModel):
         return res
 
     def period_closure(self, options):
-        report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
-        final_aml_ids = self.env['account.move.line']
-        if report_id:
-            date_from = options.get("date").get("date_from")
-            date_to = options.get("date").get("date_to")
-            for line in report_id.line_ids:
-                line_domain = ast.literal_eval(line.domain)[0][2]
-                account_id = self.env['account.account'].browse(line_domain)
-                aml_ids = self.env['account.move.line'].search(
-                    [
-                        ('move_id.date', '>=', date_from),
-                        ('move_id.date', '<=', date_to),
-                        ('move_id.state', '=', 'posted'),
-                        ('account_id', '=', account_id.id),
-                        ('account_id.x_ext_ledger_account', '=', False),
-                        '|', ('debit', '!=', 0.0), ('credit', '!=', 0.0)
-                    ]
-
-                )
-                final_aml_ids |= aml_ids
+        resp = self.export_view_items(options)
+        final_aml_ids = self.env['account.move.line'].search([('id','in',resp.get("res_id"))])
         if final_aml_ids:
             missing_analytic_aml_ids = final_aml_ids.filtered(lambda cml: cml.is_missing_analytic_account)
             if missing_analytic_aml_ids:
@@ -255,10 +237,9 @@ class ReportConfigure(models.AbstractModel):
                 raise UserError(_('Please export SAP file before closing this period'))
             for f_aml in final_aml_ids:
                 f_aml.x_sap_export_seq_final = f_aml.x_sap_export_seq
-        # action = self.env.ref('account_accountant.action_view_account_change_lock_date').read()[0]
         date_to = options.get("date").get("date_to")
-        self.env.user.company_id.write({'period_lock_date': date_to})
-        return True
+        self.env.user.company_id.write({'period_lock_date': date_to,'fiscalyear_lock_date': date_to})
+        return {}
 
     def export_view_items(self, options):
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
@@ -283,9 +264,27 @@ class ReportConfigure(models.AbstractModel):
                         ]
 
                     )
-                    aml_views_ids |= aml_ids
+                    for aml in aml_ids:
+                        if aml.debit > 0.0:
+                            if not analytic:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.credit > 0.0 and not cml.analytic_account_id and not cml.account_id.x_ext_ledger_account)
+                            else:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.credit > 0.0)
+                        else:
+                            if not analytic:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.debit > 0.0 and not cml.analytic_account_id and not cml.account_id.x_ext_ledger_account)
+                            else:
+                                counter_aml_ids = aml.move_id.line_ids.filtered(
+                                    lambda cml: cml.id != aml.id and cml.debit > 0.0)
+                        if not counter_aml_ids: continue
+                        aml_views_ids |= aml
+                        aml_views_ids |= counter_aml_ids
         action = self.env.ref('justthis_customization.action_account_moves_custom').read()[0]
         action['domain'] = str([('id', 'in', aml_views_ids.ids)])
+        action['res_id'] = aml_views_ids.ids
         return action
 
     def _get_templates(self):
@@ -410,6 +409,7 @@ class ReportConfigure(models.AbstractModel):
 
                     )
                     amount_dict = {}
+
                     for aml in aml_ids:
                         if aml.debit > 0.0:
                             if not analytic:
@@ -420,7 +420,7 @@ class ReportConfigure(models.AbstractModel):
                                     lambda cml: cml.id != aml.id and cml.credit > 0.0)
                             aml_dict = {
                                 aml.account_id.x_code_external:{'id':str(aml.id),'debit':aml.debit,'credit':0, 'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
-                                counter_aml_ids.account_id.x_code_external:{'id':str(aml.id),'debit':0,'credit':aml.debit,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
+                                counter_aml_ids.account_id.x_code_external:{'id':str(counter_aml_ids.id),'debit':0,'credit':aml.debit,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
                             }
                         else:
                             if not analytic:
@@ -431,7 +431,7 @@ class ReportConfigure(models.AbstractModel):
                                     lambda cml: cml.id != aml.id and cml.debit > 0.0)
                             aml_dict = {
                                 aml.account_id.x_code_external: {'id':str(aml.id),'debit': 0, 'credit': aml.credit,'account_id':aml.account_id,'account_code':aml.x_code_external or aml.account_id.x_code_external,'analytic_account_id': aml.analytic_account_id},
-                                counter_aml_ids.account_id.x_code_external: {'id':str(aml.id),'debit': aml.credit, 'credit': 0,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
+                                counter_aml_ids.account_id.x_code_external: {'id':str(counter_aml_ids.id),'debit': aml.credit, 'credit': 0,'account_id':counter_aml_ids.account_id,'account_code':counter_aml_ids.x_code_external or counter_aml_ids.account_id.x_code_external,'analytic_account_id': counter_aml_ids.analytic_account_id}
                             }
                         if not counter_aml_ids: continue
                         if len(counter_aml_ids) == 1:
