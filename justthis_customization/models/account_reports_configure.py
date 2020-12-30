@@ -230,9 +230,9 @@ class ReportConfigure(models.AbstractModel):
         res = super(ReportConfigure, self)._get_reports_buttons()
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
         if report_id and report_id.is_fin_closuer_report:
-            res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
+            # res.append({'name': _('Export (SAP)'), 'action': 'export_sap'})
             res.append({'name': _('View Items (SAP)'), 'action': 'export_view_items'})
-            res.append({'name': _('Period Closure'), 'action': 'period_closure'})
+            # res.append({'name': _('Period Closure'), 'action': 'period_closure'})
         return res
 
     def period_closure(self, options):
@@ -251,15 +251,16 @@ class ReportConfigure(models.AbstractModel):
         action = self.env.ref('account_accountant.action_view_account_change_lock_date').read()[0]
         ctx = json.loads(action['context'])
         ctx.update({"default_period_lock_date": date_to, "default_fiscalyear_lock_date": date_to})
-        print("---------ctx----------",ctx)
         action['context'] = json.dumps(ctx)
-        print("-------action['context']----------",action['context'])
+
         # self.env.user.company_id.write({'period_lock_date': date_to,'fiscalyear_lock_date': date_to})
         return action
 
     def export_view_items(self, options):
         report_id = self.env['account.financial.html.report'].browse(self.env.context.get("id"))
         aml_views_ids = self.env['account.move.line']
+        ctx = self._context.copy()
+        ctx.update({'financial_id': self.env.context.get('id'),'options':options})
         if report_id:
             date_from = options.get("date").get("date_from")
             date_to = options.get("date").get("date_to")
@@ -301,6 +302,8 @@ class ReportConfigure(models.AbstractModel):
         action = self.env.ref('justthis_customization.action_account_moves_custom').read()[0]
         action['domain'] = str([('id', 'in', aml_views_ids.ids)])
         action['res_id'] = aml_views_ids.ids
+        action['context'] = ctx
+
         return action
 
     def _get_templates(self):

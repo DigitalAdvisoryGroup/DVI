@@ -7,4 +7,11 @@
         </t>
     </t>
 
+    <t t-extend="ListView.buttons">
+      <t t-jquery="button.o_list_button_save" t-operation="before">
+        <button t-if="widget.searchView.action.env.context.financial_id" class="btn btn-primary oe_action_button_export" type="button" accesskey="f">Export (SAP)</button>
+        <button t-if="widget.searchView.action.env.context.financial_id" class="btn btn-primary oe_action_button_closure" type="button" accesskey="f">Period Closure</button>
+      </t>
+    </t>
+
 </templates>

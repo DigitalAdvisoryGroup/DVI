@@ -9,8 +9,17 @@ odoo.define('justthis_customization.ActionManager', function (require) {
     var ActionManager = require('web.ActionManager');
     var crash_manager = require('web.crash_manager');
     var framework = require('web.framework');
-    var session = require('web.session');
     var accountReportsWidget = require('account_reports.account_report')
+
+    var core = require('web.core');
+    var ListController = require('web.ListController');
+    var rpc = require('web.rpc');
+    var session = require('web.session');
+    var _t = core._t;
+
+    var FormRenderer = require("web.FormRenderer");
+    var dialogs = require('web.view_dialogs');
+    var Dialog = require('web.Dialog');
 
     accountReportsWidget.include({
         events: _.extend({}, accountReportsWidget.prototype.events, {
@@ -119,12 +128,6 @@ odoo.define('justthis_customization.ActionManager', function (require) {
             }
     });
 
-    var FormRenderer = require("web.FormRenderer");
-    var dialogs = require('web.view_dialogs');
-    var core = require('web.core');
-    var Dialog = require('web.Dialog');
-    var _t = core._t;
-
     FormRenderer.include({
         _renderTagButton: function (node) {
             var $button = this._super.apply(this, arguments);
@@ -159,6 +162,57 @@ odoo.define('justthis_customization.ActionManager', function (require) {
             return $button;
         }
     })
+
+    ListController.include({
+       renderButtons: function($node) {
+           this._super.apply(this, arguments);
+               if (this.$buttons) {
+                 this.$buttons.find('.oe_action_button_export').click(this.proxy('action_report_export')) ;
+                 this.$buttons.find('.oe_action_button_closure').click(this.proxy('period_closure')) ;
+               }
+       },
+       action_report_export: function (ev) {
+            var userContext = this.getSession().user_context;
+            var self =this
+            var user = session.uid;
+            return rpc.query({
+                model: 'account.report.configure.report',
+                method: 'export_sap',
+                args: [[user],this.searchView.action.env.context.options],
+                context: this.searchView.action.env.context
+            }).then(function (result) {
+
+            framework.blockUI();
+            var def = $.Deferred();
+            var all_data = result.data;
+            all_data['json_data'] = JSON.stringify([{}]);
+            session.get_file({
+                url: '/custom/account_reports',
+                data: all_data,
+                success: def.resolve.bind(def),
+                error: function () {
+                    crash_manager.rpc_error.apply(crash_manager, arguments);
+                    def.reject();
+                },
+                complete: framework.unblockUI,
+            });
+            return def;
+        });
+       },
+       period_closure: function () {
+            var self = this
+            var user = session.uid;
+            rpc.query({
+                model: 'account.report.configure.report',
+                method: 'period_closure',
+                args: [[user],this.searchView.action.env.context.options],
+                }).then(function (result) {
+                    self.do_action(result);
+                    window.location
+                });
+       },
+
+    })
     
 });
-    
+
