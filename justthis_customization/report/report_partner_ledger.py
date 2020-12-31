@@ -10,6 +10,20 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
 
     def _lines(self, data, partner):
         full_account = []
+        self.env.cr.execute("""
+                    SELECT a.id
+                    FROM account_account a
+                    WHERE a.internal_type IN %s
+                    AND NOT a.deprecated""", (tuple(["payable"]),))
+        account_ids = [a for (a,) in self.env.cr.fetchall()]
+        print("------account_ids------------",account_ids)
+        payable_aml_ids = self.env['account.move.line'].search([('date_maturity','>=',data['form']['date_from']),
+                                                                ('date_maturity', '<=', data['form']['date_to']),
+                                                                ('partner_id', '=', partner.id),
+                                                                ('account_id','in',account_ids),
+                                                                ('company_id', '=', data['form']['company_id'][0]),
+                                                                ('move_id.state','=','posted'),
+                                                                ])
         invoice_ids = self.env['account.invoice'].search([('date_invoice','>=',data['form']['date_from']),
                                                           ('date_invoice', '<=',data['form']['date_to']),
                                                           ('state','in',('open','paid')),
@@ -18,6 +32,9 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                                                           ('partner_id','=',partner.id),
                                                           ('company_id','=',data['form']['company_id'][0])
                                                           ])
+
+
+
         for inv in invoice_ids:
             inv_vals = {
                 "id":inv.id,
@@ -79,17 +96,34 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     })
             inv_vals['lines'] = inv_lines
             full_account.append(inv_vals)
+        if payable_aml_ids:
+            for pay_aml in payable_aml_ids:
+                full_account.append({
+                    "date": pay_aml.date_maturity,
+                    "name": pay_aml.move_id.name + '-' + pay_aml.name,
+                    "x_jt_main1_id": pay_aml.x_jt_main1_id,
+                    "x_jt_main2_id": pay_aml.x_jt_main2_id,
+                    "x_jt_deposit_id": pay_aml.x_jt_deposit_id,
+                    "account_name": pay_aml.account_id.name,
+                    "account_code": pay_aml.account_id.code,
+                    "analytic_account_name": pay_aml.analytic_account_id.name,
+                    "qty": pay_aml.quantity,
+                    "amount": pay_aml.debit > 0.0 and pay_aml.debit or pay_aml.credit,
+                    "is_reversal": pay_aml.is_reversal_line,
+                    "is_depreciate": pay_aml.is_depreciate_line
+                })
+
         import pprint
         print("------full_account--------------",pprint.pformat(full_account))
 
         # stop
         # currency = self.env['res.currency']
+        # print("-------data--all----",data)
+        # data['computed']['ACCOUNT_TYPE'] = ['receivable','payable']
+        # print("-------data['computed']----",data['computed'])
         # query_get_data = self.env['account.move.line'].with_context(data['form'].get('used_context', {}))._query_get()
         # reconcile_clause = "" if data['form']['reconciled'] else ' AND "account_move_line".full_reconcile_id IS NULL '
         # params = [partner.id, tuple(data['computed']['move_state']), tuple(data['computed']['account_ids'])] + query_get_data[2]
-        # print("-------query_get_data---------",query_get_data)
-        # print("-------reconcile_clause---------",reconcile_clause)
-        # print("-------params---------",params)
         # query = """
         #     SELECT "account_move_line".id, "account_move_line".invoice_id, "account_move_line".date,"account_move_line".x_jt_main1_id,"account_move_line".x_jt_main2_id,"account_move_line".x_jt_deposit_id, j.code, acc.code as a_code, acc.name as a_name, "account_move_line".ref, m.name as move_name, "account_move_line".name, "account_move_line".debit, "account_move_line".credit, "account_move_line".amount_currency,"account_move_line".currency_id, c.symbol AS currency_code
         #     FROM """ + query_get_data[0] + """
@@ -101,6 +135,8 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         #         AND m.state IN %s
         #         AND "account_move_line".account_id IN %s AND """ + query_get_data[1] + reconcile_clause + """
         #         ORDER BY "account_move_line".date"""
+        # print("--------query--------------",query)
+        # print("--------params--------------",params)
         # self.env.cr.execute(query, tuple(params))
         # res = self.env.cr.dictfetchall()
         # print("-------res-------------------",res)
@@ -156,12 +192,14 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         data['computed']['move_state'] = ['draft', 'posted']
         if data['form'].get('target_move', 'all') == 'posted':
             data['computed']['move_state'] = ['posted']
-        result_selection = data['form'].get('result_selection', 'customer')
+        result_selection = data['form'].get('result_selection', False)
+        print("----result_selection--------",result_selection)
         if result_selection == 'supplier':
             data['computed']['ACCOUNT_TYPE'] = ['payable']
         elif result_selection == 'customer':
             data['computed']['ACCOUNT_TYPE'] = ['receivable']
         else:
+            print("------esle------------")
             data['computed']['ACCOUNT_TYPE'] = ['payable', 'receivable']
 
         self.env.cr.execute("""

@@ -25,7 +25,7 @@ class AccountFinancialReportpdf(models.TransientModel):
                                        [('company_id', '=', self.company_id.id)]))
     display_account = fields.Selection([('all', 'All'), ('movement', 'With movements'),
                                         ('not_zero', 'With balance is not equal to 0'), ],
-                                       string='Display Accounts', required=True, default='movement')
+                                       string='Display Accounts', required=True, default='all')
     reconciled = fields.Boolean('Reconciled Entries', default=True)
     target_move = fields.Selection([('posted', 'All Posted Entries'),
                                     ('all', 'All Entries'),
