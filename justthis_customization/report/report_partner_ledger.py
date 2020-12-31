@@ -99,19 +99,45 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         if payable_aml_ids:
             for pay_aml in payable_aml_ids:
                 full_account.append({
+                    "id": pay_aml.id,
                     "date": pay_aml.date_maturity,
-                    "name": pay_aml.move_id.name + '-' + pay_aml.name,
                     "x_jt_main1_id": pay_aml.x_jt_main1_id,
                     "x_jt_main2_id": pay_aml.x_jt_main2_id,
                     "x_jt_deposit_id": pay_aml.x_jt_deposit_id,
-                    "account_name": pay_aml.account_id.name,
-                    "account_code": pay_aml.account_id.code,
-                    "analytic_account_name": pay_aml.analytic_account_id.name,
-                    "qty": pay_aml.quantity,
-                    "amount": pay_aml.debit > 0.0 and pay_aml.debit or pay_aml.credit,
-                    "is_reversal": pay_aml.is_reversal_line,
-                    "is_depreciate": pay_aml.is_depreciate_line
+                    "code": pay_aml.move_id.journal_id.code,
+                    "a_code": pay_aml.account_id.code,
+                    "a_name": pay_aml.account_id.name,
+                    "ref": pay_aml.move_id.ref,
+                    "move_name": pay_aml.move_id.name,
+                    "name": pay_aml.name,
+                    "state": pay_aml.move_id.state,
+                    "debit": pay_aml.debit,
+                    "credit": pay_aml.credit,
+                    "balance": 0.0,
+                    "amount_currency": 0.0,
+                    "currency_id": pay_aml.move_id.currency_id,
+                    "currency_code": False,
+                    "progress": 0.0,
+                    "displayed_name": '-'.join(field_name for field_name in (pay_aml.move_id.name, pay_aml.move_id.ref, '') if field_name not in (False, None, '', '/')),
+                    "lines": []
                 })
+
+
+
+                # full_account.append({
+                #     "date": pay_aml.date_maturity,
+                #     "name": pay_aml.move_id.name + '-' + pay_aml.name,
+                #     "x_jt_main1_id": pay_aml.x_jt_main1_id,
+                #     "x_jt_main2_id": pay_aml.x_jt_main2_id,
+                #     "x_jt_deposit_id": pay_aml.x_jt_deposit_id,
+                #     "account_name": pay_aml.account_id.name,
+                #     "account_code": pay_aml.account_id.code,
+                #     "analytic_account_name": pay_aml.analytic_account_id.name,
+                #     "qty": pay_aml.quantity,
+                #     "amount": pay_aml.debit > 0.0 and pay_aml.debit or pay_aml.credit,
+                #     "is_reversal": pay_aml.is_reversal_line,
+                #     "is_depreciate": pay_aml.is_depreciate_line
+                # })
 
         import pprint
         print("------full_account--------------",pprint.pformat(full_account))
