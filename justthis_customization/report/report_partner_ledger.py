@@ -16,7 +16,6 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     WHERE a.internal_type IN %s
                     AND NOT a.deprecated""", (tuple(["payable"]),))
         account_ids = [a for (a,) in self.env.cr.fetchall()]
-        print("------account_ids------------",account_ids)
         payable_aml_ids = self.env['account.move.line'].search([('date_maturity','>=',data['form']['date_from']),
                                                                 ('date_maturity', '<=', data['form']['date_to']),
                                                                 ('partner_id', '=', partner.id),
@@ -60,8 +59,6 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 "lines": []
             }
             inv_lines = []
-            # payment_vals = inv._get_payments_vals()
-            # print("---------payment-------",payment_vals)
             for line in inv.invoice_line_ids:
                 inv_lines.append({
                     "date": inv.date_invoice,
@@ -75,7 +72,8 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     "qty": line.quantity,
                     "amount": line.price_total,
                     "is_reversal": line.is_reversal,
-                    "is_depreciate": line.is_depreciation
+                    "is_depreciate": line.is_depreciation,
+                    "item_type": "I",
                 })
 
             if inv.payment_move_line_ids:
@@ -90,9 +88,13 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "account_code": aml.account_id.code,
                         "analytic_account_name": aml.analytic_account_id.name,
                         "qty": aml.quantity,
-                        "amount": aml.debit > 0.0 and aml.debit or aml.credit,
+                        # "amount": aml.debit > 0.0 and aml.debit or aml.credit,
+                        "debit": aml.debit,
+                        "credit": aml.credit,
+                        "balance": aml.balance,
                         "is_reversal": aml.is_reversal_line,
-                        "is_depreciate": aml.is_depreciate_line
+                        "is_depreciate": aml.is_depreciate_line,
+                        "item_type": (aml.is_reversal_line or aml.is_depreciate_line) and "C" or "P",
                     })
             inv_vals['lines'] = inv_lines
             full_account.append(inv_vals)
@@ -113,13 +115,14 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     "state": pay_aml.move_id.state,
                     "debit": pay_aml.debit,
                     "credit": pay_aml.credit,
-                    "balance": 0.0,
+                    "balance": pay_aml.balance,
                     "amount_currency": 0.0,
                     "currency_id": pay_aml.move_id.currency_id,
                     "currency_code": False,
                     "progress": 0.0,
                     "displayed_name": '-'.join(field_name for field_name in (pay_aml.move_id.name, pay_aml.move_id.ref, '') if field_name not in (False, None, '', '/')),
-                    "lines": []
+                    "lines": [],
+                    "item_type": "D",
                 })
 
 
