@@ -88,10 +88,10 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "account_code": aml.account_id.code,
                         "analytic_account_name": aml.analytic_account_id.name,
                         "qty": aml.quantity,
-                        # "amount": aml.debit > 0.0 and aml.debit or aml.credit,
-                        "debit": aml.debit,
-                        "credit": aml.credit,
-                        "balance": aml.balance,
+                        "amount": aml.debit > 0.0 and aml.debit or aml.credit,
+                        # "debit": aml.debit,
+                        # "credit": aml.credit,
+                        # "balance": aml.balance,
                         "is_reversal": aml.is_reversal_line,
                         "is_depreciate": aml.is_depreciate_line,
                         "item_type": (aml.is_reversal_line or aml.is_depreciate_line) and "C" or "P",
@@ -188,7 +188,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         return full_account
 
     def _sum_partner(self, data, partner, field):
-        if field not in ['debit', 'credit', 'debit - credit']:
+        if field not in ['debit', 'credit', 'balance']:
             return
         result = 0.0
         query_get_data = self.env['account.move.line'].with_context(data['form'].get('used_context', {}))._query_get()
