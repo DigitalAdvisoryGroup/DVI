@@ -99,92 +99,66 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
             inv_vals['lines'] = inv_lines
             full_account.append(inv_vals)
         if payable_aml_ids:
-            for pay_aml in payable_aml_ids:
+            print("--------payable_aml_ids------",payable_aml_ids)
+            temp = {}
+            aml_lines = []
+            for line in payable_aml_ids:
+                if line.x_jt_deposit_id in temp:
+                    temp[line.x_jt_deposit_id] |= line
+                else:
+                    temp[line.x_jt_deposit_id] = line
+            print("------temp----------",temp)
+
+            for k,v in temp.items():
+                print("-------k,v-------------",k,v)
+                sum_total_debit = 0.0
+                sum_total_credit = 0.0
+                sum_total_balance = 0.0
+                for pay_aml in v:
+                    aml_lines.append({
+                        "date": pay_aml.date_maturity,
+                        "name": pay_aml.move_id.name + '-' + pay_aml.name,
+                        "x_jt_main1_id": pay_aml.x_jt_main1_id,
+                        "x_jt_main2_id": pay_aml.x_jt_main2_id,
+                        "x_jt_deposit_id": pay_aml.x_jt_deposit_id,
+                        "account_name": pay_aml.account_id.name,
+                        "account_code": pay_aml.account_id.code,
+                        "analytic_account_name": pay_aml.analytic_account_id.name,
+                        "qty": pay_aml.quantity,
+                        "amount": pay_aml.debit > 0.0 and pay_aml.debit or pay_aml.credit,
+                        "is_reversal": pay_aml.is_reversal_line,
+                        "is_depreciate": pay_aml.is_depreciate_line,
+                        "item_type": "D",
+                    })
+                    sum_total_debit += pay_aml.debit
+                    sum_total_credit += pay_aml.credit
+                    sum_total_balance += pay_aml.balance
                 full_account.append({
-                    "id": pay_aml.id,
-                    "date": pay_aml.date_maturity,
-                    "x_jt_main1_id": pay_aml.x_jt_main1_id,
-                    "x_jt_main2_id": pay_aml.x_jt_main2_id,
-                    "x_jt_deposit_id": pay_aml.x_jt_deposit_id,
-                    "code": pay_aml.move_id.journal_id.code,
-                    "a_code": pay_aml.account_id.code,
-                    "a_name": pay_aml.account_id.name,
-                    "ref": pay_aml.move_id.ref,
-                    "move_name": pay_aml.move_id.name,
-                    "name": pay_aml.name,
-                    "state": pay_aml.move_id.state,
-                    "debit": pay_aml.debit,
-                    "credit": pay_aml.credit,
-                    "balance": pay_aml.balance,
+                    "id": False,
+                    "date": False,
+                    "x_jt_main1_id": False,
+                    "x_jt_main2_id": False,
+                    "x_jt_deposit_id": k,
+                    "code": False,
+                    "a_code": False,
+                    "a_name": False,
+                    "ref": False,
+                    "move_name": k,
+                    "name": False,
+                    "state": False,
+                    "debit": sum_total_debit,
+                    "credit": sum_total_credit,
+                    "balance": sum_total_balance,
                     "amount_currency": 0.0,
-                    "currency_id": pay_aml.move_id.currency_id,
+                    "currency_id": v[0].move_id.currency_id,
                     "currency_code": False,
                     "progress": 0.0,
-                    "displayed_name": '-'.join(field_name for field_name in (pay_aml.move_id.name, pay_aml.move_id.ref, '') if field_name not in (False, None, '', '/')),
-                    "lines": [],
-                    "item_type": "D",
+                    "displayed_name": k,
+                    "lines": aml_lines,
+                    # "item_type": "D",
                 })
-
-
-
-                # full_account.append({
-                #     "date": pay_aml.date_maturity,
-                #     "name": pay_aml.move_id.name + '-' + pay_aml.name,
-                #     "x_jt_main1_id": pay_aml.x_jt_main1_id,
-                #     "x_jt_main2_id": pay_aml.x_jt_main2_id,
-                #     "x_jt_deposit_id": pay_aml.x_jt_deposit_id,
-                #     "account_name": pay_aml.account_id.name,
-                #     "account_code": pay_aml.account_id.code,
-                #     "analytic_account_name": pay_aml.analytic_account_id.name,
-                #     "qty": pay_aml.quantity,
-                #     "amount": pay_aml.debit > 0.0 and pay_aml.debit or pay_aml.credit,
-                #     "is_reversal": pay_aml.is_reversal_line,
-                #     "is_depreciate": pay_aml.is_depreciate_line
-                # })
-
-        import pprint
-        print("------full_account--------------",pprint.pformat(full_account))
-
-        # stop
-        # currency = self.env['res.currency']
-        # print("-------data--all----",data)
-        # data['computed']['ACCOUNT_TYPE'] = ['receivable','payable']
-        # print("-------data['computed']----",data['computed'])
-        # query_get_data = self.env['account.move.line'].with_context(data['form'].get('used_context', {}))._query_get()
-        # reconcile_clause = "" if data['form']['reconciled'] else ' AND "account_move_line".full_reconcile_id IS NULL '
-        # params = [partner.id, tuple(data['computed']['move_state']), tuple(data['computed']['account_ids'])] + query_get_data[2]
-        # query = """
-        #     SELECT "account_move_line".id, "account_move_line".invoice_id, "account_move_line".date,"account_move_line".x_jt_main1_id,"account_move_line".x_jt_main2_id,"account_move_line".x_jt_deposit_id, j.code, acc.code as a_code, acc.name as a_name, "account_move_line".ref, m.name as move_name, "account_move_line".name, "account_move_line".debit, "account_move_line".credit, "account_move_line".amount_currency,"account_move_line".currency_id, c.symbol AS currency_code
-        #     FROM """ + query_get_data[0] + """
-        #     LEFT JOIN account_journal j ON ("account_move_line".journal_id = j.id)
-        #     LEFT JOIN account_account acc ON ("account_move_line".account_id = acc.id)
-        #     LEFT JOIN res_currency c ON ("account_move_line".currency_id=c.id)
-        #     LEFT JOIN account_move m ON (m.id="account_move_line".move_id)
-        #     WHERE "account_move_line".partner_id = %s
-        #         AND m.state IN %s
-        #         AND "account_move_line".account_id IN %s AND """ + query_get_data[1] + reconcile_clause + """
-        #         ORDER BY "account_move_line".date"""
-        # print("--------query--------------",query)
-        # print("--------params--------------",params)
-        # self.env.cr.execute(query, tuple(params))
-        # res = self.env.cr.dictfetchall()
-        # print("-------res-------------------",res)
-        # stop
-        # sum = 0.0
-        # lang_code = self.env.context.get('lang') or 'en_US'
-        # lang = self.env['res.lang']
-        # lang_id = lang._lang_get(lang_code)
-        # date_format = lang_id.date_format
-        # for r in res:
-        #     r['date'] = r['date']
-        #     r['displayed_name'] = '-'.join(
-        #         r[field_name] for field_name in ('move_name', 'ref', 'name')
-        #         if r[field_name] not in (None, '', '/')
-        #     )
-        #     sum += r['debit'] - r['credit']
-        #     r['progress'] = sum
-        #     r['currency_id'] = currency.browse(r.get('currency_id'))
-        #     full_account.append(r)
+        # import pprint
+        # print("------full_account--------------",pprint.pformat(full_account))
         return full_account
 
     def _sum_partner(self, data, partner, field):
