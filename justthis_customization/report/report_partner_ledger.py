@@ -71,6 +71,9 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     "analytic_account_name": line.account_analytic_id.name,
                     "qty": line.quantity,
                     "amount": line.price_total,
+                    "debit": 0.0,
+                    "credit": 0.0,
+                    "balance": 0.0,
                     "is_reversal": line.is_reversal,
                     "is_depreciate": line.is_depreciation,
                     "item_type": "I",
@@ -89,9 +92,9 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "analytic_account_name": aml.analytic_account_id.name,
                         "qty": aml.quantity,
                         "amount": aml.debit > 0.0 and aml.debit or aml.credit,
-                        # "debit": aml.debit,
-                        # "credit": aml.credit,
-                        # "balance": aml.balance,
+                        "debit": aml.debit,
+                        "credit": aml.credit,
+                        "balance": aml.balance,
                         "is_reversal": aml.is_reversal_line,
                         "is_depreciate": aml.is_depreciate_line,
                         "item_type": (aml.is_reversal_line or aml.is_depreciate_line) and "C" or "P",
@@ -108,7 +111,6 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 else:
                     temp[line.x_jt_deposit_id] = line
             print("------temp----------",temp)
-
             for k,v in temp.items():
                 print("-------k,v-------------",k,v)
                 sum_total_debit = 0.0
@@ -126,6 +128,9 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "analytic_account_name": pay_aml.analytic_account_id.name,
                         "qty": pay_aml.quantity,
                         "amount": pay_aml.debit > 0.0 and pay_aml.debit or pay_aml.credit,
+                        "debit": pay_aml.debit,
+                        "credit": pay_aml.credit,
+                        "balance": pay_aml.balance,
                         "is_reversal": pay_aml.is_reversal_line,
                         "is_depreciate": pay_aml.is_depreciate_line,
                         "item_type": "D",
