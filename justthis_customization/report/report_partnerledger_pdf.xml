@@ -7,7 +7,6 @@
             <t t-set="data_report_dpi" t-value="110"/>
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.internal_layout">
-
                     <style>
                         .table th, .table td {
                         padding: 0.75rem;
@@ -44,11 +43,8 @@
                         text-align: right;
                         }
                     </style>
-
                     <span style="font-size: 8px;">
-
                         <div class="page">
-
                             <!--
                             <h2>Partner Leger</h2>
                             -->
@@ -56,7 +52,7 @@
 
                             <!-- blank row -->
                             <tr>
-                                <td bgcolor="#FFFFFF" colspan="3"><![CDATA[&nbsp;]]></td>
+                                <td bgcolor="#FFFFFF" colspan="3">&amp;nbsp;</td>
                             </tr>
 
                             <table class="table table-sm table-reports">
@@ -101,7 +97,7 @@
 
                             <!-- blank row -->
                             <tr>
-                                <td bgcolor="#FFFFFF" colspan="3"><![CDATA[&nbsp;]]></td>
+                                <td bgcolor="#FFFFFF" colspan="3">&amp;nbsp;</td>
                             </tr>
 
                             <table class="table table-sm table-reports">
@@ -128,22 +124,22 @@
                                     <tr>
 
                                         <!-- date -->
-                                        <td></td>
+                                        <td/>
 
                                         <!-- Booking number -->
-                                        <td></td>
+                                        <td/>
 
                                         <!-- Case -->
-                                        <td></td>
+                                        <td/>
 
                                         <!-- Deposit -->
-                                        <td></td>
+                                        <td/>
 
                                         <!-- Reversal -->
-                                        <td></td>
+                                        <td/>
 
                                         <!-- Depreciation -->
-                                        <td></td>
+                                        <td/>
 
                                         <!-- Sum debit -->
                                         <td class="text-right">
@@ -186,10 +182,10 @@
                                             </td>
 
                                             <!-- Reversal -->
-                                            <td></td>
+                                            <td/>
 
                                             <!-- Depreciation -->
-                                            <td></td>
+                                            <td/>
 
                                             <!-- Debit -->
                                             <td class="text-right">
@@ -230,15 +226,15 @@
                                             </td>
 
 
-                                            <td></td>
-                                            <td></td>
+                                            <td/>
+                                            <td/>
 
 
                                             <!-- reversed -->
                                             <td class="text-center">
                                                 <t t-if="inv_line['is_reversal']">
                                                     <span style="font-size: 10px;">
-                                                        <![CDATA[&#10004;]]>
+                                                        &amp;#10004;
                                                     </span>
                                                 </t>
                                             </td>
@@ -247,26 +243,49 @@
                                             <td class="text-center">
                                                 <t t-if="inv_line['is_depreciate']">
                                                     <span style="font-size: 10px;">
-                                                        <![CDATA[&#10004;]]>
+                                                        &amp;#10004;
                                                     </span>
                                                 </t>
                                             </td>
 
                                             <!-- debit -->
-
                                             <td class="text-right">
-                                                <span style="font-size: 10px;" t-esc="inv_line['item_type']"/>
-                                                <!--
+
+                                              <!-- payments / credit notes -->
+                                              <t t-if="inv_line['item_type'] == 'C' or inv_line['item_type'] == 'P'">
                                                 <span style="font-size: 10px;" t-esc="inv_line['amount']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                -->
+                                              </t>
+
+                                              <!-- deposit debit -->
+                                              <t t-if="inv_line['item_type'] == 'D' and inv_line['debit'] > 0 ">
+                                                <span style="font-size: 10px;" t-esc="inv_line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                              </t>
+
                                             </td>
 
 
                                             <!-- credit -->
-                                            <td></td>
+                                            <td class="text-right">
+
+                                              <!-- invoice positions -->
+                                              <t t-if="inv_line['item_type'] == 'I'">
+                                                <span style="font-size: 10px;" t-esc="inv_line['amount']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                              </t>
+
+                                              <!-- deposit credit -->
+
+                                              <t t-if="inv_line['item_type'] == 'D' and inv_line['credit'] > 0 ">
+                                                <span style="font-size: 10px;" t-esc="inv_line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                              </t>
+
+
+
+
+                                            </td>
 
                                             <!-- balance -->
-                                            <td></td>
+                                            <td class="text-right">
+                                            </td>
 
                                         </tr>
 

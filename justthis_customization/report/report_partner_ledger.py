@@ -102,7 +102,6 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
             inv_vals['lines'] = inv_lines
             full_account.append(inv_vals)
         if payable_aml_ids:
-            print("--------payable_aml_ids------",payable_aml_ids)
             temp = {}
             aml_lines = []
             for line in payable_aml_ids:
@@ -110,12 +109,38 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                     temp[line.x_jt_deposit_id] |= line
                 else:
                     temp[line.x_jt_deposit_id] = line
-            print("------temp----------",temp)
             for k,v in temp.items():
-                print("-------k,v-------------",k,v)
+                previous_aml_ids = self.env['account.move.line'].search([('id','not in',v.ids),
+                                                                ('partner_id', '=', partner.id),
+                                                                ('x_jt_deposit_id', '=', k),
+                                                                ('company_id', '=', data['form']['company_id'][0]),
+                                                                ('move_id.state','=','posted'),
+                                                                ])
                 sum_total_debit = 0.0
                 sum_total_credit = 0.0
                 sum_total_balance = 0.0
+                if previous_aml_ids:
+                    aml_lines.append({
+                        "date": False,
+                        "name": "Opening balancec",
+                        "x_jt_main1_id": False,
+                        "x_jt_main2_id": False,
+                        "x_jt_deposit_id": k,
+                        "account_name": False,
+                        "account_code": False,
+                        "analytic_account_name": False,
+                        "qty": 1,
+                        "amount": 0.0,
+                        "debit": sum([x.debit for x in previous_aml_ids]),
+                        "credit": sum([x.credit for x in previous_aml_ids]),
+                        "balance": sum([x.balance for x in previous_aml_ids]),
+                        "is_reversal": False,
+                        "is_depreciate": False,
+                        "item_type": "D",
+                    })
+                    sum_total_debit += sum([x.debit for x in previous_aml_ids])
+                    sum_total_credit += sum([x.credit for x in previous_aml_ids])
+                    sum_total_balance += sum([x.balance for x in previous_aml_ids])
                 for pay_aml in v:
                     aml_lines.append({
                         "date": pay_aml.date_maturity,
