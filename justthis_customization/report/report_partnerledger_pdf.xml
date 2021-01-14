@@ -192,11 +192,12 @@
                                                 <span t-esc="line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
                                             </td>
 
-                                            <!-- Debit -->
+                                            <!-- Credit -->
                                             <td class="text-right">
                                                 <span t-esc="line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
                                             </td>
 
+                                            <!-- Balance -->
                                             <td class="text-right">
                                                 <span t-esc="line['progress']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
                                             </td>
@@ -225,12 +226,17 @@
                                                 <span style="font-size: 10px;" t-esc="inv_line['name']"/>
                                             </td>
 
-
+                                            <!-- Case -->
                                             <td/>
-                                            <td/>
+
+                                            <!-- deposit -->
+                                             <td>
+                                                <span t-esc="inv_line['x_jt_deposit_id']"/>
+                                            </td>
 
 
-                                            <!-- reversed -->
+
+                                            <!-- Reversal -->
                                             <td class="text-center">
                                                 <t t-if="inv_line['is_reversal']">
                                                     <span style="font-size: 10px;">
@@ -239,7 +245,7 @@
                                                 </t>
                                             </td>
 
-                                            <!-- depreciated -->
+                                            <!-- Depreciation -->
                                             <td class="text-center">
                                                 <t t-if="inv_line['is_depreciate']">
                                                     <span style="font-size: 10px;">
@@ -257,7 +263,7 @@
                                               </t>
 
                                               <!-- deposit debit -->
-                                              <t t-if="inv_line['item_type'] == 'D' and inv_line['debit'] > 0 ">
+                                              <t t-if="inv_line['item_type'] == 'D' and inv_line['debit'] &gt; 0 ">
                                                 <span style="font-size: 10px;" t-esc="inv_line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
                                               </t>
 
@@ -273,8 +279,7 @@
                                               </t>
 
                                               <!-- deposit credit -->
-
-                                              <t t-if="inv_line['item_type'] == 'D' and inv_line['credit'] > 0 ">
+                                              <t t-if="inv_line['item_type'] == 'D' and inv_line['credit'] &gt; 0 ">
                                                 <span style="font-size: 10px;" t-esc="inv_line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
                                               </t>
 

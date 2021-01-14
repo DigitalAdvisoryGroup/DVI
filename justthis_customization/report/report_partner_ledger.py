@@ -103,13 +103,15 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
             full_account.append(inv_vals)
         if payable_aml_ids:
             temp = {}
-            aml_lines = []
+
             for line in payable_aml_ids:
                 if line.x_jt_deposit_id in temp:
                     temp[line.x_jt_deposit_id] |= line
                 else:
                     temp[line.x_jt_deposit_id] = line
             for k,v in temp.items():
+                print("--------k,v---------------",k,v)
+                aml_lines = []
                 previous_aml_ids = self.env['account.move.line'].search([('id','not in',v.ids),
                                                                 ('partner_id', '=', partner.id),
                                                                 ('x_jt_deposit_id', '=', k),
