@@ -35,6 +35,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
 
 
         for inv in invoice_ids:
+            print("--------inv----------------",inv)
             inv_vals = {
                 "id":inv.id,
                 "date":inv.date_invoice,
@@ -81,6 +82,14 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
 
             if inv.payment_move_line_ids:
                 for aml in inv.payment_move_line_ids:
+                    print("--------aml-------------",aml)
+                    print("--------aml----debit---------",aml.debit)
+                    print("--------aml----credit---------",aml.credit)
+                    amount = sum([p.amount for p in aml.matched_debit_ids if p.debit_move_id in inv.move_id.line_ids])
+                    print("--------amount_currency-----------",amount)
+                    # amount1 = sum(
+                    #     [p.amount for p in aml.matched_credit_ids if p.credit_move_id in inv.move_id.line_ids])
+                    # print("---------amount1------------",amount1)
                     inv_lines.append({
                         "date": aml.date_maturity,
                         "name": aml.move_id.name+'-'+aml.name,
@@ -91,10 +100,10 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "account_code": aml.account_id.code,
                         "analytic_account_name": aml.analytic_account_id.name,
                         "qty": aml.quantity,
-                        "amount": aml.debit > 0.0 and aml.debit or aml.credit,
-                        "debit": aml.debit,
-                        "credit": aml.credit,
-                        "balance": aml.balance,
+                        "amount": amount,
+                        "debit": amount,
+                        "credit": 0.0,
+                        "balance": 0.0,
                         "is_reversal": aml.is_reversal_line,
                         "is_depreciate": aml.is_depreciate_line,
                         "item_type": (aml.is_reversal_line or aml.is_depreciate_line) and "C" or "P",
@@ -110,11 +119,11 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 else:
                     temp[line.x_jt_deposit_id] = line
             for k,v in temp.items():
-                print("--------k,v---------------",k,v)
                 aml_lines = []
                 previous_aml_ids = self.env['account.move.line'].search([('id','not in',v.ids),
                                                                 ('partner_id', '=', partner.id),
                                                                 ('x_jt_deposit_id', '=', k),
+                                                                ('date_maturity','<',data['form']['date_from']),
                                                                 ('company_id', '=', data['form']['company_id'][0]),
                                                                 ('move_id.state','=','posted'),
                                                                 ])
@@ -124,7 +133,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 if previous_aml_ids:
                     aml_lines.append({
                         "date": False,
-                        "name": "Opening balancec",
+                        "name": "Opening balance",
                         "x_jt_main1_id": False,
                         "x_jt_main2_id": False,
                         "x_jt_deposit_id": k,
