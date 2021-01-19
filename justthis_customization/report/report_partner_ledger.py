@@ -19,7 +19,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         for i in ["Balance", "Invoices","Deposits","Assets"]:
             if i == "Balance":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Balance")),
                     "debit": sum([x['debit'] for x in res_invoice]) + sum([x['debit'] for x in res_deposit]) + sum([x['debit'] for x in res_assets]),
                     "credit": sum([x['credit'] for x in res_invoice]) + sum([x['credit'] for x in res_deposit]) + sum([x['credit'] for x in res_assets]),
                     "balance": sum([x['balance'] for x in res_invoice]) + sum([x['balance'] for x in res_deposit]) + sum([x['balance'] for x in res_assets]),
@@ -27,7 +27,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 })
             elif i == "Invoices":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Invoices")),
                     "debit": sum([x['debit'] for x in res_invoice]),
                     "credit": sum([x['credit'] for x in res_invoice]),
                     "balance": sum([x['balance'] for x in res_invoice]),
@@ -35,7 +35,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 })
             elif i == "Deposits":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Deposits")),
                     "debit": sum([x['debit'] for x in res_deposit]),
                     "credit": sum([x['credit'] for x in res_deposit]),
                     "balance": sum([x['balance'] for x in res_deposit]),
@@ -43,7 +43,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 })
             elif i == "Assets":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Assets")),
                     "debit": sum([x['debit'] for x in res_assets]),
                     "credit": sum([x['credit'] for x in res_assets]),
                     "balance": sum([x['balance'] for x in res_assets]),
@@ -59,17 +59,17 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
         for i in ["Invoices","Deposits","Assets"]:
             if i == "Invoices":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Invoices")),
                     "lines": self.get_invoices_data(data,partner)
                 })
             elif i == "Deposits":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Deposits")),
                     "lines": self.get_deposits_data(data, partner)
                 })
             elif i == "Assets":
                 final_data.append({
-                    "name": i,
+                    "name": (_("Assets")),
                     "lines": self.get_assets_data(data, partner)
                 })
         return final_data
@@ -187,7 +187,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 if previous_aml_ids:
                     aml_lines.append({
                         "date": False,
-                        "name": "Opening balance",
+                        "name": (_("Opening balance")),
                         "x_jt_main1_id": False,
                         "x_jt_main2_id": False,
                         "x_jt_deposit_id": k,

@@ -1,333 +1,342 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="report_partnerledger_pdf">
+
+    <template id="report_partnerledger_pdf_document">
         <t t-call="web.html_container">
             <t t-set="data_report_margin_top" t-value="30"/>
             <t t-set="data_report_header_spacing" t-value="9"/>
             <t t-set="data_report_dpi" t-value="110"/>
-            <t t-foreach="docs" t-as="o">
-                <t t-call="web.internal_layout">
-                    <style>
-                        .table th, .table td {
-                        padding: 0.75rem;
-                        vertical-align: top;
-                        border-top: 1px solid #dee2e6;
-                        }
-
-                        th {
-                        text-align: left;
-                        }
-
-                        tr {
-                        border-top: 1px solid #dee2e6 !important;
-                        display: table-row;
-                        vertical-align: inherit;
-                        border-color: inherit;
-                        }
-
-                        table {
-                        display: table;
-                        font-family: "Noto", "Lucida Grande", Helvetica, Verdana, Arial, sans-serif;
-                        font-size: 18px;
-                        line-height: 1.5;
-
-                        border-spacing: 2px;
-                        border-color: grey;
-                        border-collapse: collapse
-                        margin-bottom: 1rem;
-                        background-color: transparent;
-                        width:100%;
-                        }
-
-                        .text-right{
-                        text-align: right;
-                        }
-                    </style>
-                    <span style="font-size: 8px;">
-                        <div class="page">
-                            <!--
-                            <h2>Partner Leger</h2>
-                            -->
-                            <h2>Kontoauszug</h2>
-
-                            <!-- blank row -->
-                            <tr>
-                                <td bgcolor="#FFFFFF" colspan="3">&amp;nbsp;</td>
-                            </tr>
-
-                            <table class="table table-sm table-reports">
-
-                                <thead>
-                                    <tr>
-                                        <!--
-                                         <th>For</th>
-                                         <th>from</th>
-                                         <th>to</th>
-                                        -->
-                                        <th>Für</th>
-                                        <th>von</th>
-                                        <th>bis</th>
-
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-
-                                    <tr>
-                                        <td>
-                                            <strong t-esc="o.name"/>
-                                        </td>
-
-                                        <td>
-                                            <t t-if="data['form']['date_from']">
-                                                <span t-esc="data['form']['date_from']" t-options="{'widget':'date', 'format':'dd.MM.yyyy'}"/>
-                                                <br/>
-                                            </t>
-                                        </td>
-
-                                        <td>
-                                            <t t-if="data['form']['date_to']">
-                                                <span t-esc="data['form']['date_to']" t-options="{'widget':'date', 'format':'dd.MM.yyyy'}"/>
-                                            </t>
-                                        </td>
-                                    </tr>
-
-                                </tbody>
-                            </table>
-
-                            <!-- blank row -->
-                            <tr>
-                                <td bgcolor="#FFFFFF" colspan="3">&amp;nbsp;</td>
-                            </tr>
-
-                            <table class="table table-sm table-reports">
-                                <thead>
-                                    <tr>
-
-                                        <th>Datum</th>
-                                        <th>Nummer</th>
-                                        <th>Geschäft</th>
-                                        <th>Depot</th>
-                                        <th>Storniert</th>
-                                        <th>Abgeschrieben</th>
-
-                                        <th class="text-right">Soll</th>
-                                        <th class="text-right">Haben</th>
-                                        <th class="text-right">Saldo</th>
-
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-
-
-
-                                    <!-- total line -->
-                                    <!--<tr>
-
-                                        &lt;!&ndash; date &ndash;&gt;
-                                        <td/>
-
-                                        &lt;!&ndash; Booking number &ndash;&gt;
-                                        <td/>
-
-                                        &lt;!&ndash; Case &ndash;&gt;
-                                        <td/>
-
-                                        &lt;!&ndash; Deposit &ndash;&gt;
-                                        <td/>
-
-                                        &lt;!&ndash; Reversal &ndash;&gt;
-                                        <td/>
-
-                                        &lt;!&ndash; Depreciation &ndash;&gt;
-                                        <td/>
-
-                                        &lt;!&ndash; Sum debit &ndash;&gt;
-                                        <td class="text-right">
-                                            <strong t-esc="sum_partner(data, o, 'debit')" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                        </td>
-
-                                        &lt;!&ndash; Sum credit &ndash;&gt;
-                                        <td class="text-right">
-                                            <strong t-esc="sum_partner(data, o, 'credit')" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                        </td>
-
-                                        &lt;!&ndash; Overall balance &ndash;&gt;
-                                        <td class="text-right">
-                                            <strong t-esc="sum_partner(data, o, 'balance')" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                        </td>
-                                    </tr>-->
-                                    <t t-foreach="main_headers_total(data, o)" t-as="header_total">
-                                        <tr>
-                                            <td colspan="6">
-                                                <h3>
-                                                    <span t-esc="header_total['name']"/>
-                                                </h3>
-                                            </td>
-                                            <td class="text-right">
-                                                <strong t-esc="header_total['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                            </td>
-                                            <td class="text-right">
-                                                <strong t-esc="header_total['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                            </td>
-                                            <td class="text-right">
-                                                <strong t-esc="header_total['balance']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                    <t t-foreach="main_headers(data, o)" t-as="header">
-                                        <tr>
-                                            <td colspan="9">
-                                                <h3>
-                                                    <span t-esc="header['name']"/>
-                                                </h3>
-                                            </td>
-                                        </tr>
-                                        <!-- Invoice -->
-                                        <t t-foreach="header['lines']" t-as="line">
-                                            <tr>
-
-                                                <!-- date -->
-                                                <td>
-                                                    <span t-esc="line['date']" t-options="{'widget':'date', 'format':'dd.MM.yyyy'}"/>
-                                                </td>
-
-                                                <!-- Invoice number -->
-                                                <td>
-                                                    <span t-esc="line['move_name']"/>
-                                                </td>
-
-                                                <!-- case -->
-                                                <td>
-                                                    <span t-esc="line['x_jt_main2_id']"/>
-                                                </td>
-
-                                                <!-- deposit -->
-                                                <td>
-                                                    <span t-esc="line['x_jt_deposit_id']"/>
-                                                </td>
-
-                                                <!-- Reversal -->
-                                                <td/>
-
-                                                <!-- Depreciation -->
-                                                <td/>
-
-                                                <!-- Debit -->
-                                                <td class="text-right">
-                                                    <span t-esc="line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                </td>
-
-                                                <!-- Credit -->
-                                                <td class="text-right">
-                                                    <span t-esc="line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                </td>
-
-                                                <!-- Balance -->
-                                                <td class="text-right">
-                                                    <span t-esc="line['progress']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                </td>
-
-                                                <td class="text-right" t-if="data['form']['amount_currency']">
-                                                    <t t-if="line['currency_id']">
-                                                        <span t-esc="line['amount_currency']" t-options="{'widget': 'monetary', 'display_currency': line['currency_id']}"/>
-                                                    </t>
-                                                </td>
-
-                                            </tr>
-
-
-                                            <!--Invoice details -->
-
-                                            <tr t-foreach="line['lines']" t-as="inv_line">
-
-
-                                                <!-- date -->
-                                                <td class="text-right">
-                                                    <span style="font-size: 10px;" t-esc="inv_line['date']" t-options="{'widget':'date', 'format':'dd.MM.yy'}"/>
-                                                </td>
-
-                                                <!-- booking number -->
-                                                <td>
-                                                    <span style="font-size: 10px;" t-esc="inv_line['name']"/>
-                                                </td>
-
-                                                <!-- Case -->
-                                                <td/>
-
-                                                <!-- deposit -->
-                                                <td>
-                                                    <span t-esc="inv_line['x_jt_deposit_id']"/>
-                                                </td>
-
-
-                                                <!-- Reversal -->
-                                                <td class="text-center">
-                                                    <t t-if="inv_line['is_reversal']">
-                                                        <span style="font-size: 10px;">
-                                                            &amp;#10004;
-                                                        </span>
-                                                    </t>
-                                                </td>
-
-                                                <!-- Depreciation -->
-                                                <td class="text-center">
-                                                    <t t-if="inv_line['is_depreciate']">
-                                                        <span style="font-size: 10px;">
-                                                            &amp;#10004;
-                                                        </span>
-                                                    </t>
-                                                </td>
-
-                                                <!-- debit -->
-                                                <td class="text-right">
-
-                                                    <!-- payments / credit notes -->
-                                                    <t t-if="inv_line['item_type'] == 'C' or inv_line['item_type'] == 'P'">
-                                                        <span style="font-size: 10px;" t-esc="inv_line['amount']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                    </t>
-
-                                                    <!-- deposit debit -->
-                                                    <t t-if="inv_line['item_type'] == 'D' and inv_line['debit'] &gt; 0 ">
-                                                        <span style="font-size: 10px;" t-esc="inv_line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                    </t>
-
-                                                </td>
-
-
-                                                <!-- credit -->
-                                                <td class="text-right">
-
-                                                    <!-- invoice positions -->
-                                                    <t t-if="inv_line['item_type'] == 'I'">
-                                                        <span style="font-size: 10px;" t-esc="inv_line['amount']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                    </t>
-
-                                                    <!-- deposit credit -->
-                                                    <t t-if="inv_line['item_type'] == 'D' and inv_line['credit'] &gt; 0 ">
-                                                        <span style="font-size: 10px;" t-esc="inv_line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
-                                                    </t>
-
-
-                                                </td>
-
-                                                <!-- balance -->
-                                                <td class="text-right">
-                                                </td>
-
-                                            </tr>
-
+            <t t-set="o" t-value="o.with_context(lang=lang)"/>
+            <t t-call="web.internal_layout">
+                <style>
+                    .table th, .table td {
+                    padding: 0.75rem;
+                    vertical-align: top;
+                    border-top: 1px solid #dee2e6;
+                    }
+
+                    th {
+                    text-align: left;
+                    }
+
+                    tr {
+                    border-top: 1px solid #dee2e6 !important;
+                    display: table-row;
+                    vertical-align: inherit;
+                    border-color: inherit;
+                    }
+
+                    table {
+                    display: table;
+                    font-family: "Noto", "Lucida Grande", Helvetica, Verdana, Arial, sans-serif;
+                    font-size: 18px;
+                    line-height: 1.5;
+
+                    border-spacing: 2px;
+                    border-color: grey;
+                    border-collapse: collapse
+                    margin-bottom: 1rem;
+                    background-color: transparent;
+                    width:100%;
+                    }
+
+                    .text-right{
+                    text-align: right;
+                    }
+                </style>
+                <span style="font-size: 8px;">
+                    <div class="page">
+                        <!--
+                        <h2>Partner Leger</h2>
+                        -->
+                        <h2>Kontoauszug</h2>
+
+                        <!-- blank row -->
+                        <tr>
+                            <td bgcolor="#FFFFFF" colspan="3">&amp;nbsp;</td>
+                        </tr>
+
+                        <table class="table table-sm table-reports">
+
+                            <thead>
+                                <tr>
+                                    <!--
+                                     <th>For</th>
+                                     <th>from</th>
+                                     <th>to</th>
+                                    -->
+                                    <th>Für</th>
+                                    <th>von</th>
+                                    <th>bis</th>
+
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <tr>
+                                    <td>
+                                        <strong t-esc="o.name"/>
+                                    </td>
+
+                                    <td>
+                                        <t t-if="data['form']['date_from']">
+                                            <span t-esc="data['form']['date_from']" t-options="{'widget':'date', 'format':'dd.MM.yyyy'}"/>
+                                            <br/>
                                         </t>
+                                    </td>
+
+                                    <td>
+                                        <t t-if="data['form']['date_to']">
+                                            <span t-esc="data['form']['date_to']" t-options="{'widget':'date', 'format':'dd.MM.yyyy'}"/>
+                                        </t>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+
+                        <!-- blank row -->
+                        <tr>
+                            <td bgcolor="#FFFFFF" colspan="3">&amp;nbsp;</td>
+                        </tr>
+
+                        <table class="table table-sm table-reports">
+                            <thead>
+                                <tr>
+
+                                    <th>Datum</th>
+                                    <th>Nummer</th>
+                                    <th>Geschäft</th>
+                                    <th>Depot</th>
+                                    <th>Storniert</th>
+                                    <th>Abgeschrieben</th>
+
+                                    <th class="text-right">Soll</th>
+                                    <th class="text-right">Haben</th>
+                                    <th class="text-right">Saldo</th>
+
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+
+                                <!-- total line -->
+                                <!--<tr>
+
+                                    &lt;!&ndash; date &ndash;&gt;
+                                    <td/>
+
+                                    &lt;!&ndash; Booking number &ndash;&gt;
+                                    <td/>
+
+                                    &lt;!&ndash; Case &ndash;&gt;
+                                    <td/>
+
+                                    &lt;!&ndash; Deposit &ndash;&gt;
+                                    <td/>
+
+                                    &lt;!&ndash; Reversal &ndash;&gt;
+                                    <td/>
+
+                                    &lt;!&ndash; Depreciation &ndash;&gt;
+                                    <td/>
+
+                                    &lt;!&ndash; Sum debit &ndash;&gt;
+                                    <td class="text-right">
+                                        <strong t-esc="sum_partner(data, o, 'debit')" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                    </td>
+
+                                    &lt;!&ndash; Sum credit &ndash;&gt;
+                                    <td class="text-right">
+                                        <strong t-esc="sum_partner(data, o, 'credit')" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                    </td>
+
+                                    &lt;!&ndash; Overall balance &ndash;&gt;
+                                    <td class="text-right">
+                                        <strong t-esc="sum_partner(data, o, 'balance')" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                    </td>
+                                </tr>-->
+                                <t t-foreach="main_headers_total(data, o)" t-as="header_total">
+                                    <tr>
+                                        <td colspan="6">
+                                            <h3>
+                                                <span t-esc="header_total['name']"/>
+                                            </h3>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong t-esc="header_total['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong t-esc="header_total['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                        </td>
+                                        <td class="text-right">
+                                            <strong t-esc="header_total['balance']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="main_headers(data, o)" t-as="header">
+                                    <tr>
+                                        <td colspan="9">
+                                            <h3>
+                                                <span t-esc="header['name']"/>
+                                            </h3>
+                                        </td>
+                                    </tr>
+                                    <!-- Invoice -->
+                                    <t t-foreach="header['lines']" t-as="line">
+                                        <tr>
+
+                                            <!-- date -->
+                                            <td>
+                                                <span t-esc="line['date']" t-options="{'widget':'date', 'format':'dd.MM.yyyy'}"/>
+                                            </td>
+
+                                            <!-- Invoice number -->
+                                            <td>
+                                                <span t-esc="line['move_name']"/>
+                                            </td>
+
+                                            <!-- case -->
+                                            <td>
+                                                <span t-esc="line['x_jt_main2_id']"/>
+                                            </td>
+
+                                            <!-- deposit -->
+                                            <td>
+                                                <span t-esc="line['x_jt_deposit_id']"/>
+                                            </td>
+
+                                            <!-- Reversal -->
+                                            <td/>
+
+                                            <!-- Depreciation -->
+                                            <td/>
+
+                                            <!-- Debit -->
+                                            <td class="text-right">
+                                                <span t-esc="line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                            </td>
+
+                                            <!-- Credit -->
+                                            <td class="text-right">
+                                                <span t-esc="line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                            </td>
+
+                                            <!-- Balance -->
+                                            <td class="text-right">
+                                                <span t-esc="line['progress']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                            </td>
+
+                                            <td class="text-right" t-if="data['form']['amount_currency']">
+                                                <t t-if="line['currency_id']">
+                                                    <span t-esc="line['amount_currency']" t-options="{'widget': 'monetary', 'display_currency': line['currency_id']}"/>
+                                                </t>
+                                            </td>
+
+                                        </tr>
+
+
+                                        <!--Invoice details -->
+
+                                        <tr t-foreach="line['lines']" t-as="inv_line">
+
+
+                                            <!-- date -->
+                                            <td class="text-right">
+                                                <span style="font-size: 10px;" t-esc="inv_line['date']" t-options="{'widget':'date', 'format':'dd.MM.yy'}"/>
+                                            </td>
+
+                                            <!-- booking number -->
+                                            <td>
+                                                <span style="font-size: 10px;" t-esc="inv_line['name']"/>
+                                            </td>
+
+                                            <!-- Case -->
+                                            <td/>
+
+                                            <!-- deposit -->
+                                            <td>
+                                                <span t-esc="inv_line['x_jt_deposit_id']"/>
+                                            </td>
+
+
+                                            <!-- Reversal -->
+                                            <td class="text-center">
+                                                <t t-if="inv_line['is_reversal']">
+                                                    <span style="font-size: 10px;">
+                                                        &amp;#10004;
+                                                    </span>
+                                                </t>
+                                            </td>
+
+                                            <!-- Depreciation -->
+                                            <td class="text-center">
+                                                <t t-if="inv_line['is_depreciate']">
+                                                    <span style="font-size: 10px;">
+                                                        &amp;#10004;
+                                                    </span>
+                                                </t>
+                                            </td>
+
+                                            <!-- debit -->
+                                            <td class="text-right">
+
+                                                <!-- payments / credit notes -->
+                                                <t t-if="inv_line['item_type'] == 'C' or inv_line['item_type'] == 'P'">
+                                                    <span style="font-size: 10px;" t-esc="inv_line['amount']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                                </t>
+
+                                                <!-- deposit debit -->
+                                                <t t-if="inv_line['item_type'] == 'D' and inv_line['debit'] &gt; 0 ">
+                                                    <span style="font-size: 10px;" t-esc="inv_line['debit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                                </t>
+
+                                            </td>
+
+
+                                            <!-- credit -->
+                                            <td class="text-right">
+
+                                                <!-- invoice positions -->
+                                                <t t-if="inv_line['item_type'] == 'I'">
+                                                    <span style="font-size: 10px;" t-esc="inv_line['amount']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                                </t>
+
+                                                <!-- deposit credit -->
+                                                <t t-if="inv_line['item_type'] == 'D' and inv_line['credit'] &gt; 0 ">
+                                                    <span style="font-size: 10px;" t-esc="inv_line['credit']" t-options="{'widget': 'monetary', 'display_currency': res_company.currency_id}"/>
+                                                </t>
+
+
+                                            </td>
+
+                                            <!-- balance -->
+                                            <td class="text-right">
+                                            </td>
+
+                                        </tr>
 
                                     </t>
 
+                                </t>
 
-                                </tbody>
-                            </table>
-                        </div>
-                    </span>
-                </t>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </span>
+            </t>
+        </t>
+    </template>
+
+
+    <template id="report_partnerledger_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="lang" t-value="o.lang"/>
+                <t t-call="justthis_customization.report_partnerledger_pdf_document" t-lang="lang"/>
             </t>
         </t>
     </template>
