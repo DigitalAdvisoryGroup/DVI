@@ -164,9 +164,9 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                                                                 ('company_id', '=', data['form']['company_id'][0]),
                                                                 ('move_id.state','=','posted'),
                                                                 ])
+        full_account = []
         if payable_aml_ids:
             temp = {}
-            full_account = []
             for line in payable_aml_ids:
                 if line.x_jt_deposit_id in temp:
                     temp[line.x_jt_deposit_id] |= line
