@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo Module Developed by Candidroot Solutions Pvt. Ltd.
 # See LICENSE file for full copyright and licensing details.
+import json
 
 from odoo import models, api, fields
 import base64
@@ -94,7 +95,7 @@ class ResPartner(models.Model):
                         "credit": 0.0,
                         "balance": payment.amount,
                         "amount_currency": 0.0,
-                        "currency_id": payment.currency_id,
+                        "currency_id": payment.currency_id.name,
                         "currency_code": False,
                         "progress": 0.0,
                         "lines": []
