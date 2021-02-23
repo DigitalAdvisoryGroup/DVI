@@ -117,12 +117,14 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                                                          ('state','in',('posted','reconciled')),
                                                          ('payment_type','=','inbound'),
                                                         ])
-        # print("---------payment_ids----------------",payment_ids)
         if payment_ids:
-            unlink_payment_ids = payment_ids.filtered(lambda p: not p.has_invoices)
+            for payment in payment_ids:
+                if payment.amount > sum([x.amount_total - x.residual for x in payment.invoice_ids]):
+            # stop
+            # unlink_payment_ids = payment_ids.filtered(lambda p: not p.has_invoices)
             # print("-------unlink_payment_ids---------",unlink_payment_ids)
-            if unlink_payment_ids:
-                for payment in unlink_payment_ids:
+            #         if unlink_payment_ids:
+            #             for payment in unlink_payment_ids:
                     payment_vals = {
                         "id": payment.id,
                         "date": payment.payment_date,
@@ -136,7 +138,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "move_name": payment.name,
                         "name": payment.name,
                         "state": payment.state,
-                        "debit": payment.amount,
+                        "debit": payment.amount - sum([x.amount_total - x.residual for x in payment.invoice_ids]),
                         "credit": 0.0,
                         "balance": payment.amount,
                         "amount_currency": 0.0,
