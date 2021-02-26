@@ -149,6 +149,49 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                         "lines": []
                     }
                     final_data.append(payment_vals)
+        self.env.cr.execute("""
+                                SELECT a.id
+                                FROM account_account a
+                                WHERE a.internal_type IN %s
+                                AND NOT a.deprecated""", (tuple(["receivable"]),))
+        account_ids = [a for (a,) in self.env.cr.fetchall()]
+        print("---------account_ids------------",account_ids)
+        asset_aml_ids = self.env['account.move.line'].search([('partner_id', '=', partner.id),
+                                                              ('date_maturity', '>=', data['form']['date_from']),
+                                                              ('date_maturity', '<=', data['form']['date_to']),
+                                                              ('invoice_id', '=', False),
+                                                              ('matched_credit_ids', '=', False),
+                                                              ('matched_debit_ids', '=', False),
+                                                              ('account_id', 'in', account_ids),
+                                                              ('move_id.state', '=', 'posted'),
+                                                              ('company_id', '=', data['form']['company_id'][0])
+                                                          ])
+        print("-------asset_aml_ids-----------",asset_aml_ids)
+        if asset_aml_ids:
+            for line in asset_aml_ids:
+                final_data.append({
+                    "id": line.id,
+                    "date": line.date_maturity,
+                    "x_jt_main1_id": line.x_jt_main1_id,
+                    "x_jt_main2_id": line.x_jt_main2_id,
+                    "x_jt_deposit_id": line.x_jt_deposit_id,
+                    "code": line.move_id.journal_id.code,
+                    "a_code": line.account_id.code,
+                    "a_name": line.account_id.name,
+                    "ref": line.name,
+                    "move_name": line.move_id.name,
+                    "name": False,
+                    "state": False,
+                    "debit": line.debit,
+                    "credit": line.credit,
+                    "balance": line.balance,
+                    "amount_currency": 0.0,
+                    "currency_id": line.move_id.currency_id,
+                    "currency_code": False,
+                    "progress": 0.0,
+                    "displayed_name": line.move_id.name,
+                    "lines": [],
+                })
         return final_data
 
     def get_deposits_data(self, data, partner):
