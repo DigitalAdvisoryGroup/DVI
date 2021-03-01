@@ -110,15 +110,15 @@ class ResPartner(models.Model):
                                         AND NOT a.deprecated""", (tuple(["receivable"]),))
         account_ids = [a for (a,) in self.env.cr.fetchall()]
         print("---------account_ids------------", account_ids)
-        asset_aml_ids = self.env['account.move.line'].search([('partner_id', '=', partner.id),
-                                                              ('date_maturity', '>=', data['form']['date_from']),
-                                                              ('date_maturity', '<=', data['form']['date_to']),
+        asset_aml_ids = self.env['account.move.line'].search([('partner_id', '=', self.id),
+                                                              ('date_maturity', '>=', date_from),
+                                                              ('date_maturity', '<=', date_to),
                                                               ('invoice_id', '=', False),
                                                               ('matched_credit_ids', '=', False),
                                                               ('matched_debit_ids', '=', False),
                                                               ('account_id', 'in', account_ids),
                                                               ('move_id.state', '=', 'posted'),
-                                                              ('company_id', '=', data['form']['company_id'][0])
+                                                              ('company_id', '=', self.env.user.company_id.id)
                                                               ])
         print("-------asset_aml_ids-----------", asset_aml_ids)
         if asset_aml_ids:
@@ -140,7 +140,7 @@ class ResPartner(models.Model):
                     "credit": line.credit,
                     "balance": line.balance,
                     "amount_currency": 0.0,
-                    "currency_id": line.move_id.currency_id,
+                    "currency_id": line.move_id.currency_id.name,
                     "currency_code": False,
                     "progress": 0.0,
                     "displayed_name": line.move_id.name,
