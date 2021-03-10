@@ -70,5 +70,4 @@ class AccountFinancialReportpdf(models.TransientModel):
 
     def _print_report(self, data):
         data = self.pre_print_report(data)
-        print("--------data----------------",data)
         return self.env.ref('justthis_customization.action_report_partnerledger_pdf').report_action(self, data=data)

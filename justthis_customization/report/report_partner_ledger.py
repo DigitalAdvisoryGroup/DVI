@@ -254,7 +254,7 @@ class ReportPartnerLedgerPdf(models.AbstractModel):
                 for pay_aml in v:
                     aml_lines.append({
                         "date": pay_aml.date_maturity,
-                        "name": pay_aml.move_id.name + '-' + pay_aml.name,
+                        "name": pay_aml.name and pay_aml.move_id.name + '-' + pay_aml.name or pay_aml.move_id.name,
                         "x_jt_main1_id": pay_aml.x_jt_main1_id,
                         "x_jt_main2_id": pay_aml.x_jt_main2_id,
                         "x_jt_deposit_id": pay_aml.x_jt_deposit_id,

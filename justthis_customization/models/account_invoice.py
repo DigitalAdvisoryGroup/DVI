@@ -173,7 +173,7 @@ class account_journal(models.Model):
         reversed_invoice_count = self.env['account.invoice'].search([('type','=','out_invoice'),('invoice_line_ids.is_reversal','=',True),('state','!=','cancel')])
         fully_invoice_count = self.env['account.invoice'].search([('type','=','out_invoice'),('invoice_line_ids.is_depreciation','=',True),('residual','<',1),('state','!=','cancel')])
         partial_invoice_count = self.env['account.invoice'].search([('type','=','out_invoice'),('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0),('state','!=','cancel')])
-        isr_record_count = self.env['inbound_isr_msg'].search([('x_invoice_id','=',False)])
+        isr_record_count = self.env['inbound_isr_msg'].search([('x_tx_type', '!=', '999'),('x_invoice_id','=',False)])
         currency = self.currency_id or self.company_id.currency_id
         reversal_count_sum = formatLang(self.env, currency.round(sum(reversal_count.mapped('amount_total'))) + 0.0, currency_obj=currency)
         depreciation_count_sum = formatLang(self.env, currency.round(sum(depreciation_count.mapped('amount_total'))) + 0.0, currency_obj=currency)
@@ -218,7 +218,7 @@ class account_journal(models.Model):
         elif action_type == 'partial_depreciation':
             action['domain'] = [('invoice_line_ids.is_depreciation','=',True),('residual','>',0.0),('state','!=','cancel')]
         elif action_type == 'isr_invoice':
-            action['domain'] = [('x_invoice_id','=',False)]
+            action['domain'] = [('x_tx_type', '!=', '999'),('x_invoice_id','=',False)]
 
         return action
 

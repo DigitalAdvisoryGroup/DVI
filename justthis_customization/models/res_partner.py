@@ -17,9 +17,12 @@ class ResPartner(models.Model):
             partner_ledger_vals = {
                 "partner_id": self.id,
                 "date_from": from_date,
-                "date_to": from_to
+                "date_to": from_to,
             }
-            partner_ledger_id = self.env['account.financial.report.pdf'].create(partner_ledger_vals)
+            def_data = self.env['account.financial.report.pdf'].with_context(active_id=self.id,active_ids=self.ids,active_model="res.partner").default_get(self.env['account.financial.report.pdf']._fields)
+            def_data.update(partner_ledger_vals)
+            partner_ledger_id = self.env['account.financial.report.pdf'].create(def_data)
+            partner_ledger_id._onchange_company_id()
             res = partner_ledger_id.check_report()
             pdf = self.env.ref('justthis_customization.action_report_partnerledger_pdf').sudo().render_qweb_pdf(
                 [partner_ledger_id],data=res.get("data"))
