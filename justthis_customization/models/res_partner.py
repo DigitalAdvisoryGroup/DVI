@@ -66,7 +66,7 @@ class ResPartner(models.Model):
                     "credit": 0.0,
                     "balance": inv.residual,
                     "amount_currency": 0.0,
-                    "currency_id": inv.currency_id,
+                    "currency_id": inv.currency_id.name,
                     "currency_code": False,
                     "progress": 0.0,
                     "displayed_name": '-'.join(field_name for field_name in (inv.move_id.name, inv.reference, '') if field_name not in (False, None, '', '/')),
